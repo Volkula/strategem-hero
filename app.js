@@ -258,18 +258,54 @@
     }
   }
 
-  function applyKioskLayout() {
-    if (!isKioskMode()) return;
-    document.documentElement.classList.add("kiosk-mode");
-    document.body.classList.add("kiosk-mode");
+  function setKioskQueryParam(on) {
+    try {
+      const url = new URL(window.location.href);
+      if (on) url.searchParams.set("kiosk", "1");
+      else url.searchParams.delete("kiosk");
+      const next = url.pathname + url.search + url.hash;
+      history.replaceState(null, "", next);
+    } catch {
+      /* ignore */
+    }
+    syncKioskLayout();
+  }
+
+  function syncKioskLayout() {
+    const on = isKioskMode();
     const km = el("kioskMenu");
     const pd = el("playControlsDefault");
-    if (km) km.hidden = false;
-    if (pd) pd.style.display = "none";
-    ["btnSettings", "btnEditor", "btnPlay"].forEach((id) => {
-      const n = el(id);
-      if (n) n.style.display = "none";
-    });
+    const btnKiosk = el("btnKiosk");
+    const btnExit = el("btnExitKiosk");
+
+    if (on) {
+      document.documentElement.classList.add("kiosk-mode");
+      document.body.classList.add("kiosk-mode");
+      if (km) km.hidden = false;
+      if (pd) pd.style.display = "none";
+      ["btnSettings", "btnEditor", "btnPlay", "btnKiosk"].forEach((id) => {
+        const n = el(id);
+        if (n) n.style.display = "none";
+      });
+      if (btnExit) {
+        btnExit.hidden = false;
+        btnExit.style.display = "";
+      }
+    } else {
+      document.documentElement.classList.remove("kiosk-mode");
+      document.body.classList.remove("kiosk-mode");
+      if (km) km.hidden = true;
+      if (pd) pd.style.display = "";
+      ["btnSettings", "btnEditor", "btnPlay"].forEach((id) => {
+        const n = el(id);
+        if (n) n.style.display = "";
+      });
+      if (btnKiosk) btnKiosk.style.display = "";
+      if (btnExit) {
+        btnExit.hidden = true;
+        btnExit.style.display = "none";
+      }
+    }
   }
 
   function formatSessionLeft(ms) {
@@ -1587,13 +1623,26 @@
     el("editorApply").addEventListener("click", applyEditorOverride);
     el("editorReset").addEventListener("click", resetEditorOverride);
 
-    if (isKioskMode()) {
-      el("kioskBtnRestart").addEventListener("click", () => startKioskRun(lastKioskPreset));
-      el("kioskBtnEasy").addEventListener("click", () => startKioskRun("easy"));
-      el("kioskBtnSprint").addEventListener("click", () => startKioskRun("sprint30"));
-      el("kioskBtnLottery").addEventListener("click", () => startKioskRun("lottery"));
-      el("kioskBtnMarathon").addEventListener("click", () => startKioskRun("marathon5"));
+    el("kioskBtnRestart").addEventListener("click", () => startKioskRun(lastKioskPreset));
+    el("kioskBtnEasy").addEventListener("click", () => startKioskRun("easy"));
+    el("kioskBtnSprint").addEventListener("click", () => startKioskRun("sprint30"));
+    el("kioskBtnLottery").addEventListener("click", () => startKioskRun("lottery"));
+    el("kioskBtnMarathon").addEventListener("click", () => startKioskRun("marathon5"));
+
+    const btnKiosk = el("btnKiosk");
+    if (btnKiosk) {
+      btnKiosk.addEventListener("click", () => {
+        setKioskQueryParam(true);
+        showPanel("play");
+      });
     }
+    const btnExitKiosk = el("btnExitKiosk");
+    if (btnExitKiosk) {
+      btnExitKiosk.addEventListener("click", () => {
+        setKioskQueryParam(false);
+      });
+    }
+    window.addEventListener("popstate", syncKioskLayout);
 
     window.addEventListener("keydown", handleKeyDown);
   }
@@ -1608,7 +1657,7 @@
   }
 
   function init() {
-    applyKioskLayout();
+    syncKioskLayout();
     wireUi();
     initDirButtons();
     hideGameOverModal();

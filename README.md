@@ -12,7 +12,7 @@ Browser trainer for **Helldivers 2** stratagem codes (keyboard, swipes, local as
 
 ## Festival / kiosk UI
 
-Open with query **`?kiosk=1`** (e.g. `index.html?kiosk=1`). Settings and editor are hidden; use the on-screen mode buttons (easy, 30s sprint, one-mistake lottery, 5 min marathon). Language switch stays in the header.
+Use the header **Kiosk** button, or open with **`?kiosk=1`**. **Game** (or removing `kiosk` from the URL) returns to normal mode. In kiosk mode, Settings and Editor are hidden; use the on-screen festival buttons. The language switch stays in the header.
 
 ## Run locally
 

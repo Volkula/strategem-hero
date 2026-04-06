@@ -7,6 +7,8 @@
       settings: "Settings",
       editor: "Editor",
       play: "Play",
+      btnKiosk: "Kiosk",
+      btnExitKiosk: "Game",
       playHint:
         "Hold Ctrl (or your bindings) for keyboard. On touch: swipe on the playfield — up/down/left/right. Short swipes are ignored.",
       startRun: "Start run",
@@ -126,6 +128,8 @@
       settings: "Настройки",
       editor: "Редактор",
       play: "Игра",
+      btnKiosk: "Киоск",
+      btnExitKiosk: "Игра",
       playHint:
         "Клавиатура: зажмите Ctrl / свои клавиши. Сенсор: свайп по полю вверх/вниз/влево/вправо. Короткие движения игнорируются.",
       startRun: "Старт",
