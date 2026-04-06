@@ -1,3 +1,7 @@
 Stratagem permit-style SVG icons in assets/images/stratagems/ are from
 https://github.com/drizzer14/stratagem-hero (MIT License).
 super_earth.svg is from the same repository.
+
+Patch-themed playfield JPEGs in assets/backgrounds/patch-*.jpg are original
+rasters for this project (not official Helldivers 2 / warbond marketing art).
+Replace these files locally if you want different imagery.

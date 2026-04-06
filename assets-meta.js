@@ -1,17 +1,17 @@
 /**
- * Local asset paths: icons (MIT, see assets/THIRD_PARTY.txt) + patch backgrounds (original SVG).
+ * Local asset paths: icons (MIT, see assets/THIRD_PARTY.txt) + patch backgrounds (JPEG).
  * patchMap keys tie stratagem ids to thematic drops; omitted ids use "base".
  */
 (function () {
   const P = "assets/backgrounds/";
   const patchFiles = {
-    base: `${P}patch-base.svg`,
-    cuttingEdge: `${P}patch-cutting-edge.svg`,
-    siegeDust: `${P}patch-siege-dust.svg`,
-    controlUrbanChem: `${P}patch-control-urban-chem.svg`,
-    pythonEntrenched: `${P}patch-python-entrenched.svg`,
-    mastersMisc: `${P}patch-masters-misc.svg`,
-    vehicles: `${P}patch-vehicles.svg`,
+    base: `${P}patch-base.jpg`,
+    cuttingEdge: `${P}patch-cutting-edge.jpg`,
+    siegeDust: `${P}patch-siege-dust.jpg`,
+    controlUrbanChem: `${P}patch-control-urban-chem.jpg`,
+    pythonEntrenched: `${P}patch-python-entrenched.jpg`,
+    mastersMisc: `${P}patch-masters-misc.jpg`,
+    vehicles: `${P}patch-vehicles.jpg`,
   };
 
   /** @type {Record<string, string>} stratagem id -> svg filename in assets/images/stratagems/ */
