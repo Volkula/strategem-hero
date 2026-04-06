@@ -7,21 +7,33 @@
   const CHEVRON_D = "M24 4 L44 46 H32 L24 26 L16 46 H4 Z";
   const CHEVRON_ROT = { up: 0, right: 90, down: 180, left: 270 };
 
-  function defaultLevelRow(i) {
+  /** Progressive defaults: shorter time, higher rewards and harsher penalties on later levels. */
+  function generatedLevelRow(i) {
+    const n = DEFAULT_LEVELS;
+    const t = n <= 1 ? 0 : (i - 1) / (n - 1);
+    const timeMs = Math.round(Math.max(3200, 14600 - t * (14600 - 3400)));
+    const successPoints = Math.max(1, Math.round(1 + t * 7));
+    const failPenaltyPoints = Math.min(6, Math.floor(0.25 + t * 5.25));
+    const wrongTimeDebtMs = Math.round(t * t * 1000);
     return {
       level: i,
-      timeMs: Math.max(3500, 14000 - i * 900),
-      successPoints: 1,
-      failPenaltyPoints: 0,
-      wrongTimeDebtMs: 0,
+      timeMs,
+      successPoints,
+      failPenaltyPoints,
+      wrongTimeDebtMs,
     };
   }
 
-  function defaultConfig() {
-    const levels = [];
-    for (let i = 1; i <= DEFAULT_LEVELS; i++) {
-      levels.push(defaultLevelRow(i));
+  function buildDefaultLevels() {
+    const out = [];
+    for (let j = 1; j <= DEFAULT_LEVELS; j++) {
+      out.push(generatedLevelRow(j));
     }
+    return out;
+  }
+
+  function defaultConfig() {
+    const levels = buildDefaultLevels();
     return {
       version: 5,
       locale: "en",
@@ -72,10 +84,10 @@
   }
 
   function normalizeLevels(levels) {
-    const def = defaultConfig().levels;
+    const def = buildDefaultLevels();
     if (!Array.isArray(levels) || !levels.length) return def;
     return levels.map((row, idx) => {
-      const d = def[idx] || def[def.length - 1] || defaultLevelRow(idx + 1);
+      const d = def[idx] || def[def.length - 1] || generatedLevelRow(idx + 1);
       const lv = row.level != null ? row.level : idx + 1;
       return {
         level: lv,
@@ -379,7 +391,7 @@
   function currentLevelSpec() {
     const lv = run ? run.level : 1;
     const row = cfg.levels.find((l) => l.level === lv) || cfg.levels[0];
-    return row || defaultLevelRow(1);
+    return row || generatedLevelRow(1);
   }
 
   function timeForStratagem(strat) {
@@ -1181,6 +1193,14 @@
       cfg.swipeMinDistance = Math.max(24, Number(el("swipeMinDistance").value) || 48);
       el("swipeMinDistance").value = String(cfg.swipeMinDistance);
       saveConfig(cfg);
+    });
+
+    el("btnResetLevelCurve").addEventListener("click", () => {
+      cfg.levels = buildDefaultLevels().map((row) => ({ ...row }));
+      saveConfig(cfg);
+      renderLevelRows();
+      const sid = el("editorStratSelect")?.value;
+      if (sid) renderEditorLevelSpeeds(sid);
     });
 
     const playfieldEl = el("playfield");

@@ -70,156 +70,173 @@
     <section id="panelSettings" class="panel">
       <h2 data-i18n="settingsTitle">Settings</h2>
 
-      <fieldset>
-        <legend data-i18n="themeAudio">Background theme (audio / video)</legend>
-        <label class="block">
-          <span data-i18n="themeType">Source</span>
-          <select id="themeType">
-            <option value="none" data-i18n="themeNone">None</option>
-            <option value="mp3" data-i18n="themeMp3">Local / URL MP3</option>
-            <option value="youtube" data-i18n="themeYoutube">YouTube (video or playlist URL)</option>
-          </select>
-        </label>
-        <label class="block">
-          <span data-i18n="mp3File">MP3 file</span>
-          <input type="file" id="mp3File" accept="audio/mpeg,audio/*" />
-        </label>
-        <label class="block">
-          <span data-i18n="mp3Url">MP3 URL (optional)</span>
-          <input type="url" id="mp3Url" placeholder="https://..." />
-        </label>
-        <label class="block">
-          <span data-i18n="youtubeUrl">YouTube URL</span>
-          <input type="url" id="youtubeUrl" placeholder="https://www.youtube.com/watch?v=... or playlist" />
-        </label>
-        <label class="inline">
-          <input type="checkbox" id="youtubeMute" />
-          <span data-i18n="youtubeMute">Mute YouTube (use only as visual background)</span>
-        </label>
-      </fieldset>
-
-      <fieldset>
-        <legend data-i18n="bindingsTitle">Direction keys (first match wins)</legend>
-        <p class="small" data-i18n="bindingsHelp">Click a field and press a key. Multiple keys per direction allowed.</p>
-        <div class="bind-grid" id="bindGrid"></div>
-      </fieldset>
-
-      <fieldset>
-        <legend data-i18n="levelsTitle">Speed by level</legend>
-        <p class="small" data-i18n="levelsHelp">Per level: time for one full code (ms), score per success, points lost on fail, extra time debt subtracted from the next code.</p>
-        <div id="levelRows" class="level-rows"></div>
-      </fieldset>
-
-      <fieldset>
-        <legend data-i18n="gameRulesTitle">Lives &amp; defeat</legend>
-        <p class="small" data-i18n="gameRulesHelp">0 lives = unlimited mistakes. When the limit is reached, the custom end screen opens.</p>
-        <label class="block">
-          <span data-i18n="maxErrorsLabel">Max mistakes (0 = off)</span>
-          <input type="number" id="maxErrors" min="0" max="99" step="1" value="0" />
-        </label>
-        <label class="inline">
-          <input type="checkbox" id="countTimeoutAsError" checked />
-          <span data-i18n="countTimeoutAsError">Count time out as a mistake</span>
-        </label>
-        <label class="inline">
-          <input type="checkbox" id="countWrongAsError" checked />
-          <span data-i18n="countWrongAsError">Count wrong direction as a mistake</span>
-        </label>
-      </fieldset>
-
-      <fieldset>
-        <legend data-i18n="endScreenLegend">Defeat screen</legend>
-        <p class="small" data-i18n="endScreenHelp">Shown when you run out of lives. Optional link and image (stored in config as Base64).</p>
-        <label class="block">
-          <span data-i18n="endScreenTitleField">Title</span>
-          <input type="text" id="endScreenTitleField" placeholder="" />
-        </label>
-        <label class="block">
-          <span data-i18n="endScreenMessageField">Message</span>
-          <textarea id="endScreenMessageField" rows="3" placeholder=""></textarea>
-        </label>
-        <label class="block">
-          <span data-i18n="endScreenLinkUrl">Link URL</span>
-          <input type="url" id="endScreenLinkUrl" placeholder="https://..." />
-        </label>
-        <label class="block">
-          <span data-i18n="endScreenLinkText">Link label</span>
-          <input type="text" id="endScreenLinkText" placeholder="" />
-        </label>
-        <label class="block">
-          <span data-i18n="endScreenImage">Image file</span>
-          <input type="file" id="endScreenImageFile" accept="image/*" />
-        </label>
-        <div class="row-btns">
-          <button type="button" id="btnClearEndScreenImage" data-i18n="clearEndScreenImage">Remove image</button>
+      <details class="settings-details">
+        <summary class="settings-details__summary"><span data-i18n="themeAudio">Background theme (audio / video)</span></summary>
+        <div class="settings-details__inner">
+          <label class="block">
+            <span data-i18n="themeType">Source</span>
+            <select id="themeType">
+              <option value="none" data-i18n="themeNone">None</option>
+              <option value="mp3" data-i18n="themeMp3">Local / URL MP3</option>
+              <option value="youtube" data-i18n="themeYoutube">YouTube (video or playlist URL)</option>
+            </select>
+          </label>
+          <label class="block">
+            <span data-i18n="mp3File">MP3 file</span>
+            <input type="file" id="mp3File" accept="audio/mpeg,audio/*" />
+          </label>
+          <label class="block">
+            <span data-i18n="mp3Url">MP3 URL (optional)</span>
+            <input type="url" id="mp3Url" placeholder="https://..." />
+          </label>
+          <label class="block">
+            <span data-i18n="youtubeUrl">YouTube URL</span>
+            <input type="url" id="youtubeUrl" placeholder="https://www.youtube.com/watch?v=... or playlist" />
+          </label>
+          <label class="inline">
+            <input type="checkbox" id="youtubeMute" />
+            <span data-i18n="youtubeMute">Mute YouTube (use only as visual background)</span>
+          </label>
         </div>
-      </fieldset>
+      </details>
 
-      <fieldset>
-        <legend data-i18n="appearanceTitle">Appearance</legend>
-        <label class="block">
-          <span data-i18n="terminalBackground">Terminal / app background (CSS)</span>
-          <input type="text" id="terminalBackground" placeholder="e.g. #0a0a0a or linear-gradient(...)" />
-        </label>
-        <label class="block">
-          <span data-i18n="terminalBgFile">Terminal background image (local file)</span>
-          <input type="file" id="terminalBgFile" accept="image/*" />
-        </label>
-        <div class="row-btns">
-          <button type="button" id="btnClearTerminalImg" data-i18n="clearTerminalImg">Remove terminal image</button>
+      <details class="settings-details">
+        <summary class="settings-details__summary"><span data-i18n="bindingsTitle">Direction keys (first match wins)</span></summary>
+        <div class="settings-details__inner">
+          <p class="small" data-i18n="bindingsHelp">Click a field and press a key. Multiple keys per direction allowed.</p>
+          <div class="bind-grid" id="bindGrid"></div>
         </div>
-        <label class="block">
-          <span data-i18n="globalPlayfieldBg">Global playfield background (CSS)</span>
-          <input type="text" id="globalPlayfieldBg" placeholder="e.g. linear-gradient(...)" />
-        </label>
-        <label class="block">
-          <span data-i18n="globalCardBg">Global stratagem card background (CSS)</span>
-          <input type="text" id="globalCardBg" placeholder="optional" />
-        </label>
-        <label class="inline">
-          <input type="checkbox" id="includeIncomplete" />
-          <span data-i18n="includeIncomplete">Include stratagems with empty codes (practice)</span>
-        </label>
-        <label class="inline">
-          <input type="checkbox" id="usePatchBackgrounds" checked />
-          <span data-i18n="usePatchBackgrounds">Patch-themed playfield image by stratagem</span>
-        </label>
-        <label class="inline">
-          <input type="checkbox" id="superEarthWatermark" checked />
-          <span data-i18n="superEarthWatermark">Super Earth seal (local SVG) on playfield</span>
-        </label>
-        <label class="inline">
-          <input type="checkbox" id="enableSwipes" checked />
-          <span data-i18n="enableSwipes">Swipe on playfield for directions (touch)</span>
-        </label>
-        <label class="block">
-          <span data-i18n="swipeMinDistance">Swipe minimum distance (px)</span>
-          <input type="number" id="swipeMinDistance" min="24" max="200" step="4" value="48" />
-        </label>
-      </fieldset>
+      </details>
 
-      <fieldset>
-        <legend data-i18n="storageTitle">Config</legend>
-        <div class="row-btns">
-          <button type="button" id="btnSaveLocal" data-i18n="saveLocal">Save locally</button>
-          <button type="button" id="btnExportB64" data-i18n="exportB64">Copy Base64</button>
-          <button type="button" id="btnImportB64" data-i18n="importB64">Load from Base64</button>
+      <details class="settings-details">
+        <summary class="settings-details__summary"><span data-i18n="levelsTitle">Speed by level</span></summary>
+        <div class="settings-details__inner">
+          <p class="small" data-i18n="levelsHelp">Per level: time for one full code (ms), score per success, points lost on fail, extra time debt subtracted from the next code.</p>
+          <div class="row-btns">
+            <button type="button" id="btnResetLevelCurve" data-i18n="resetLevelCurve">Reset levels to built-in curve</button>
+          </div>
+          <div id="levelRows" class="level-rows"></div>
         </div>
-        <label class="block">
-          <span data-i18n="importFile">Load from file</span>
-          <input type="file" id="importFile" accept="application/json,.json" />
-        </label>
-        <label class="block">
-          <span data-i18n="importUrl">Load from URL</span>
-          <input type="url" id="importUrl" placeholder="https://.../config.json" />
-          <button type="button" id="btnImportUrl" data-i18n="fetch">Fetch</button>
-        </label>
-        <label class="block">
-          <span data-i18n="importClipboard">Load from clipboard</span>
-          <button type="button" id="btnImportClip" data-i18n="paste">Read clipboard</button>
-        </label>
-        <textarea id="b64Area" class="b64-area" rows="3" placeholder="Base64…"></textarea>
-      </fieldset>
+      </details>
+
+      <details class="settings-details">
+        <summary class="settings-details__summary"><span data-i18n="gameRulesTitle">Lives &amp; defeat</span></summary>
+        <div class="settings-details__inner">
+          <p class="small" data-i18n="gameRulesHelp">0 lives = unlimited mistakes. When the limit is reached, the custom end screen opens.</p>
+          <label class="block">
+            <span data-i18n="maxErrorsLabel">Max mistakes (0 = off)</span>
+            <input type="number" id="maxErrors" min="0" max="99" step="1" value="0" />
+          </label>
+          <label class="inline">
+            <input type="checkbox" id="countTimeoutAsError" checked />
+            <span data-i18n="countTimeoutAsError">Count time out as a mistake</span>
+          </label>
+          <label class="inline">
+            <input type="checkbox" id="countWrongAsError" checked />
+            <span data-i18n="countWrongAsError">Count wrong direction as a mistake</span>
+          </label>
+        </div>
+      </details>
+
+      <details class="settings-details">
+        <summary class="settings-details__summary"><span data-i18n="endScreenLegend">Defeat screen</span></summary>
+        <div class="settings-details__inner">
+          <p class="small" data-i18n="endScreenHelp">Shown when you run out of lives. Optional link and image (stored in config as Base64).</p>
+          <label class="block">
+            <span data-i18n="endScreenTitleField">Title</span>
+            <input type="text" id="endScreenTitleField" placeholder="" />
+          </label>
+          <label class="block">
+            <span data-i18n="endScreenMessageField">Message</span>
+            <textarea id="endScreenMessageField" rows="3" placeholder=""></textarea>
+          </label>
+          <label class="block">
+            <span data-i18n="endScreenLinkUrl">Link URL</span>
+            <input type="url" id="endScreenLinkUrl" placeholder="https://..." />
+          </label>
+          <label class="block">
+            <span data-i18n="endScreenLinkText">Link label</span>
+            <input type="text" id="endScreenLinkText" placeholder="" />
+          </label>
+          <label class="block">
+            <span data-i18n="endScreenImage">Image file</span>
+            <input type="file" id="endScreenImageFile" accept="image/*" />
+          </label>
+          <div class="row-btns">
+            <button type="button" id="btnClearEndScreenImage" data-i18n="clearEndScreenImage">Remove image</button>
+          </div>
+        </div>
+      </details>
+
+      <details class="settings-details">
+        <summary class="settings-details__summary"><span data-i18n="appearanceTitle">Appearance</span></summary>
+        <div class="settings-details__inner">
+          <label class="block">
+            <span data-i18n="terminalBackground">Terminal / app background (CSS)</span>
+            <input type="text" id="terminalBackground" placeholder="e.g. #0a0a0a or linear-gradient(...)" />
+          </label>
+          <label class="block">
+            <span data-i18n="terminalBgFile">Terminal background image (local file)</span>
+            <input type="file" id="terminalBgFile" accept="image/*" />
+          </label>
+          <div class="row-btns">
+            <button type="button" id="btnClearTerminalImg" data-i18n="clearTerminalImg">Remove terminal image</button>
+          </div>
+          <label class="block">
+            <span data-i18n="globalPlayfieldBg">Global playfield background (CSS)</span>
+            <input type="text" id="globalPlayfieldBg" placeholder="e.g. linear-gradient(...)" />
+          </label>
+          <label class="block">
+            <span data-i18n="globalCardBg">Global stratagem card background (CSS)</span>
+            <input type="text" id="globalCardBg" placeholder="optional" />
+          </label>
+          <label class="inline">
+            <input type="checkbox" id="includeIncomplete" />
+            <span data-i18n="includeIncomplete">Include stratagems with empty codes (practice)</span>
+          </label>
+          <label class="inline">
+            <input type="checkbox" id="usePatchBackgrounds" checked />
+            <span data-i18n="usePatchBackgrounds">Patch-themed playfield image by stratagem</span>
+          </label>
+          <label class="inline">
+            <input type="checkbox" id="superEarthWatermark" checked />
+            <span data-i18n="superEarthWatermark">Super Earth seal (local SVG) on playfield</span>
+          </label>
+          <label class="inline">
+            <input type="checkbox" id="enableSwipes" checked />
+            <span data-i18n="enableSwipes">Swipe on playfield for directions (touch)</span>
+          </label>
+          <label class="block">
+            <span data-i18n="swipeMinDistance">Swipe minimum distance (px)</span>
+            <input type="number" id="swipeMinDistance" min="24" max="200" step="4" value="48" />
+          </label>
+        </div>
+      </details>
+
+      <details class="settings-details">
+        <summary class="settings-details__summary"><span data-i18n="storageTitle">Config</span></summary>
+        <div class="settings-details__inner">
+          <div class="row-btns">
+            <button type="button" id="btnSaveLocal" data-i18n="saveLocal">Save locally</button>
+            <button type="button" id="btnExportB64" data-i18n="exportB64">Copy Base64</button>
+            <button type="button" id="btnImportB64" data-i18n="importB64">Load from Base64</button>
+          </div>
+          <label class="block">
+            <span data-i18n="importFile">Load from file</span>
+            <input type="file" id="importFile" accept="application/json,.json" />
+          </label>
+          <label class="block">
+            <span data-i18n="importUrl">Load from URL</span>
+            <input type="url" id="importUrl" placeholder="https://.../config.json" />
+            <button type="button" id="btnImportUrl" data-i18n="fetch">Fetch</button>
+          </label>
+          <label class="block">
+            <span data-i18n="importClipboard">Load from clipboard</span>
+            <button type="button" id="btnImportClip" data-i18n="paste">Read clipboard</button>
+          </label>
+          <textarea id="b64Area" class="b64-area" rows="3" placeholder="Base64…"></textarea>
+        </div>
+      </details>
     </section>
 
     <section id="panelEditor" class="panel">

@@ -26,7 +26,8 @@
       bindingsHelp: "Click a box, press a key. Add several keys per direction.",
       levelsTitle: "Timer & scoring per level",
       levelsHelp:
-        "Time (ms) for one full code; points for a correct stratagem; points subtracted on any fail; time debt (ms) subtracted from the next code after a fail.",
+        "Defaults follow a built-in curve (tighter timer, more points, harsher penalties on higher levels). Edit freely or reset to that curve.",
+      resetLevelCurve: "Reset levels to built-in curve",
       levelTimeMs: "Time (ms)",
       levelSuccessPoints: "Points / success",
       levelFailPenaltyPts: "Penalty pts / fail",
@@ -124,7 +125,8 @@
       bindingsHelp: "Кликните поле и нажмите клавишу. Можно несколько на каждое направление.",
       levelsTitle: "Таймер и очки по уровням",
       levelsHelp:
-        "Время (мс) на полный код; очки за успех; штраф очков при любом провале; долг времени (мс), вычитаемый из следующего кода после провала.",
+        "По умолчанию — встроенная кривая: на высоких уровнях меньше времени, больше очков за успех и жёстче штрафы. Можно править вручную или сбросить к кривой.",
+      resetLevelCurve: "Сбросить уровни к встроенной кривой",
       levelTimeMs: "Время (мс)",
       levelSuccessPoints: "Очки за успех",
       levelFailPenaltyPts: "Штраф очков",

@@ -418,6 +418,60 @@ legend {
   font-size: 0.85rem;
 }
 
+#panelSettings .settings-details {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin: 0.65rem 0;
+  background: rgba(255, 255, 255, 0.02);
+  overflow: hidden;
+}
+
+#panelSettings .settings-details__summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  user-select: none;
+}
+
+#panelSettings .settings-details__summary::-webkit-details-marker {
+  display: none;
+}
+
+#panelSettings .settings-details__summary::before {
+  content: "▸";
+  display: inline-block;
+  transition: transform 0.15s ease;
+  color: var(--muted);
+  font-size: 0.75rem;
+  width: 1em;
+  flex-shrink: 0;
+}
+
+#panelSettings .settings-details[open] > .settings-details__summary::before {
+  transform: rotate(90deg);
+}
+
+#panelSettings .settings-details__summary:hover,
+#panelSettings .settings-details__summary:focus-visible {
+  color: var(--brand);
+  outline: none;
+}
+
+#panelSettings .settings-details__summary:focus-visible {
+  box-shadow: inset 0 0 0 2px rgba(212, 168, 85, 0.45);
+}
+
+#panelSettings .settings-details__inner {
+  padding: 0.35rem 0.85rem 0.85rem;
+  border-top: 1px solid var(--border);
+}
+
 label.block {
   display: flex;
   flex-direction: column;
