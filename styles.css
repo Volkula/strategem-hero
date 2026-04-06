@@ -55,6 +55,18 @@ body {
   align-items: center;
 }
 
+textarea {
+  width: 100%;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+  resize: vertical;
+}
+
 button,
 select,
 input[type="url"],
@@ -129,13 +141,122 @@ button:active {
 
 .hud {
   display: flex;
-  gap: 1.25rem;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
   font-variant-numeric: tabular-nums;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   color: var(--brand);
   font-size: 0.95rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+  align-items: baseline;
+}
+
+.hud-timer {
+  color: var(--text);
+  min-width: 3.5rem;
+}
+
+.hud-errors {
+  color: var(--bad);
+}
+
+.timer-bar {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  margin-bottom: 1rem;
+  overflow: hidden;
+  border: 1px solid rgba(92, 77, 46, 0.5);
+}
+
+.timer-bar__fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #5a9e4b, var(--brand));
+  border-radius: 3px;
+  transition: width 0.08s linear;
+}
+
+.game-over-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.game-over-modal[hidden] {
+  display: none !important;
+}
+
+.game-over-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.78);
+  cursor: pointer;
+}
+
+.game-over-modal__panel {
+  position: relative;
+  z-index: 1;
+  max-width: 28rem;
+  width: 100%;
+  padding: 1.35rem 1.5rem;
+  background: linear-gradient(165deg, rgba(28, 24, 18, 0.98) 0%, rgba(10, 9, 7, 0.99) 100%);
+  border: 2px solid #6b5a36;
+  border-radius: 4px;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.65);
+}
+
+.game-over-modal__title {
+  margin: 0 0 0.75rem;
+  font-size: 1.2rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+}
+
+.game-over-modal__msg {
+  margin: 0 0 1rem;
+  line-height: 1.45;
+  color: var(--text);
+  white-space: pre-wrap;
+}
+
+.game-over-modal__img {
+  display: block;
+  max-width: 100%;
+  max-height: 200px;
+  object-fit: contain;
+  margin: 0 auto 1rem;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+
+.game-over-modal__img[hidden] {
+  display: none !important;
+}
+
+.game-over-modal__link-wrap {
+  margin: 0 0 1rem;
+}
+
+.game-over-modal__link {
+  color: var(--ok);
+  word-break: break-all;
+}
+
+.game-over-modal__link[hidden] {
+  display: none !important;
+}
+
+.game-over-modal__btn {
+  width: 100%;
+  padding: 0.5rem;
+  font-weight: 600;
 }
 
 .stratagem-card {
@@ -357,8 +478,48 @@ label.inline {
   flex-wrap: wrap;
 }
 
+.level-row--game {
+  flex-direction: column;
+  align-items: stretch;
+  padding: 0.5rem 0.65rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.level-row__head {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 0.35rem;
+}
+
+.level-row__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 0.5rem 0.75rem;
+}
+
+.level-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.level-field span {
+  line-height: 1.2;
+}
+
+.level-row__grid input[type="number"] {
+  width: 100%;
+  max-width: 6.5rem;
+}
+
 .level-row input[type="number"],
-#swipeMinDistance {
+#swipeMinDistance,
+#maxErrors {
   width: 100px;
   background: var(--panel);
   color: var(--text);

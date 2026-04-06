@@ -28,6 +28,11 @@
           <span id="hudLevel" data-i18n-prefix="level">—</span>
           <span id="hudScore">0</span>
           <span id="hudCombo">×0</span>
+          <span id="hudTimer" class="hud-timer" aria-live="polite">—</span>
+          <span id="hudErrors" class="hud-errors" hidden></span>
+        </div>
+        <div class="timer-bar" aria-hidden="true">
+          <div id="timerBarFill" class="timer-bar__fill"></div>
         </div>
         <div id="stratagemCard" class="stratagem-card">
           <div class="stratagem-card__main">
@@ -45,6 +50,19 @@
         <div class="play-controls">
           <button type="button" id="btnStartRun" data-i18n="startRun">Start</button>
           <button type="button" id="btnEndRun" data-i18n="endRun">End run</button>
+        </div>
+      </div>
+
+      <div id="gameOverModal" class="game-over-modal" hidden>
+        <div class="game-over-modal__backdrop" id="gameOverBackdrop"></div>
+        <div class="game-over-modal__panel" role="dialog" aria-modal="true" aria-labelledby="gameOverTitleText">
+          <h2 id="gameOverTitleText" class="game-over-modal__title"></h2>
+          <p id="gameOverMessageText" class="game-over-modal__msg"></p>
+          <img id="gameOverImage" class="game-over-modal__img" alt="" hidden />
+          <p class="game-over-modal__link-wrap">
+            <a id="gameOverLink" class="game-over-modal__link" href="#" target="_blank" rel="noopener noreferrer" hidden></a>
+          </p>
+          <button type="button" id="gameOverClose" class="game-over-modal__btn" data-i18n="gameOverClose">OK</button>
         </div>
       </div>
     </section>
@@ -88,8 +106,53 @@
 
       <fieldset>
         <legend data-i18n="levelsTitle">Speed by level</legend>
-        <p class="small" data-i18n="levelsHelp">Time limit to finish one full stratagem sequence (ms). Lower = harder.</p>
+        <p class="small" data-i18n="levelsHelp">Per level: time for one full code (ms), score per success, points lost on fail, extra time debt subtracted from the next code.</p>
         <div id="levelRows" class="level-rows"></div>
+      </fieldset>
+
+      <fieldset>
+        <legend data-i18n="gameRulesTitle">Lives &amp; defeat</legend>
+        <p class="small" data-i18n="gameRulesHelp">0 lives = unlimited mistakes. When the limit is reached, the custom end screen opens.</p>
+        <label class="block">
+          <span data-i18n="maxErrorsLabel">Max mistakes (0 = off)</span>
+          <input type="number" id="maxErrors" min="0" max="99" step="1" value="0" />
+        </label>
+        <label class="inline">
+          <input type="checkbox" id="countTimeoutAsError" checked />
+          <span data-i18n="countTimeoutAsError">Count time out as a mistake</span>
+        </label>
+        <label class="inline">
+          <input type="checkbox" id="countWrongAsError" checked />
+          <span data-i18n="countWrongAsError">Count wrong direction as a mistake</span>
+        </label>
+      </fieldset>
+
+      <fieldset>
+        <legend data-i18n="endScreenLegend">Defeat screen</legend>
+        <p class="small" data-i18n="endScreenHelp">Shown when you run out of lives. Optional link and image (stored in config as Base64).</p>
+        <label class="block">
+          <span data-i18n="endScreenTitleField">Title</span>
+          <input type="text" id="endScreenTitleField" placeholder="" />
+        </label>
+        <label class="block">
+          <span data-i18n="endScreenMessageField">Message</span>
+          <textarea id="endScreenMessageField" rows="3" placeholder=""></textarea>
+        </label>
+        <label class="block">
+          <span data-i18n="endScreenLinkUrl">Link URL</span>
+          <input type="url" id="endScreenLinkUrl" placeholder="https://..." />
+        </label>
+        <label class="block">
+          <span data-i18n="endScreenLinkText">Link label</span>
+          <input type="text" id="endScreenLinkText" placeholder="" />
+        </label>
+        <label class="block">
+          <span data-i18n="endScreenImage">Image file</span>
+          <input type="file" id="endScreenImageFile" accept="image/*" />
+        </label>
+        <div class="row-btns">
+          <button type="button" id="btnClearEndScreenImage" data-i18n="clearEndScreenImage">Remove image</button>
+        </div>
       </fieldset>
 
       <fieldset>
