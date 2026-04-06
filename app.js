@@ -3,7 +3,6 @@
   const STORAGE_KEY = "stratagem-hero-config-v5";
   const LEGACY_STORAGE_KEYS = ["stratagem-hero-config-v4", "stratagem-hero-config-v3"];
   const DEFAULT_LEVELS = 10;
-  const ARROWS = { up: "↑", down: "↓", left: "←", right: "→" };
   const CHEVRON_D = "M24 4 L44 46 H32 L24 26 L16 46 H4 Z";
   const CHEVRON_ROT = { up: 0, right: 90, down: 180, left: 270 };
 
@@ -1005,7 +1004,8 @@
       const cell = document.createElement("div");
       cell.className = "bind-cell";
       const strong = document.createElement("strong");
-      strong.textContent = ARROWS[dir];
+      strong.className = "bind-chevron-wrap";
+      strong.appendChild(makeChevronChip(dir, "hd-arrow-chip--bind"));
       const keys = document.createElement("div");
       keys.className = "bind-keys";
       keys.textContent = cfg.bindings[dir].join(", ") || "—";
@@ -1519,9 +1519,19 @@
     window.addEventListener("keydown", handleKeyDown);
   }
 
+  function initDirButtons() {
+    document.querySelectorAll(".dir-btn[data-dir]").forEach((btn) => {
+      const d = btn.getAttribute("data-dir");
+      if (!d) return;
+      btn.textContent = "";
+      btn.appendChild(makeChevronChip(d, "hd-arrow-chip--tiny"));
+    });
+  }
+
   function init() {
     applyKioskLayout();
     wireUi();
+    initDirButtons();
     hideGameOverModal();
     applyI18nDom();
     syncSettingsForm();

@@ -5,7 +5,7 @@
  */
 (function () {
   const U = 1;
-  /** @type {[string, string, string[], 0|1, string, string?][]} */
+  /** @type {[string, string, string[], 0|1, string, string?][]} 6th col legacy RU (unused; locale ru = en/wiki). */
   const RAW = [
     // ——— Support weapons (wiki order) ———
     ["mg-43", "support_weapons", ["down", "left", "down", "up", "right"], 0, "MG-43 Machine Gun", "Пулемёт MG-43"],
@@ -121,12 +121,13 @@
     ["seaf", "mission", ["right", "up", "up", "down"], U, "SEAF Artillery", "Артиллерия SEAF"],
   ];
 
-  window.HD2_STRATAGEMS = RAW.map(([id, category, code, unverified, en, ru]) => ({
+  // Russian locale uses English strings from https://helldivers.wiki.gg/wiki/Stratagems (no official RU wiki).
+  window.HD2_STRATAGEMS = RAW.map(([id, category, code, unverified, en]) => ({
     id,
     category,
     code,
     unverified: !!unverified,
-    names: { en, ru: ru || en },
+    names: { en, ru: en },
   }));
 
 })();

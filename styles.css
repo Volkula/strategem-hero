@@ -392,6 +392,33 @@ button:active {
   padding-top: 0.25rem;
 }
 
+.hd-arrow-chip--bind {
+  width: 28px;
+  height: 32px;
+  vertical-align: middle;
+}
+
+.hd-arrow-chip--bind .hd-chevron-svg {
+  width: 28px;
+  height: 32px;
+}
+
+.hd-arrow-chip--tiny {
+  width: 36px;
+  height: 40px;
+}
+
+.hd-arrow-chip--tiny .hd-chevron-svg {
+  width: 36px;
+  height: 40px;
+}
+
+.bind-chevron-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .hd-arrow-chip {
   width: 44px;
   height: 50px;
@@ -677,8 +704,12 @@ label.inline {
 }
 
 .dir-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-width: 2.75rem;
   min-height: 2.75rem;
+  padding: 0.2rem;
   font-size: 1rem;
   border-color: #5c4d2e;
   color: var(--brand);
