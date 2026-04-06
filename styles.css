@@ -46,6 +46,103 @@ body {
   min-height: 380px;
 }
 
+/* Drizzer14 arcade shell + timer look (github.com/drizzer14/stratagem-hero) */
+.kiosk-arcade-splash {
+  text-align: center;
+  margin: 0 auto 1rem;
+  max-width: 52rem;
+}
+
+.kiosk-arcade-splash[hidden] {
+  display: none !important;
+}
+
+.kiosk-arcade-splash__title {
+  margin: 0 0 0.35em;
+  font-size: clamp(2rem, 7vw, 4.5rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  color: #fff;
+  text-shadow: 0 0 36px rgba(255, 255, 255, 0.12);
+}
+
+.kiosk-arcade-splash__prompt {
+  margin: 0 0 0.35em;
+  font-size: clamp(1.2rem, 4vw, 2.15rem);
+  font-weight: 700;
+  color: var(--brand);
+  line-height: 1.2;
+}
+
+.kiosk-arcade-splash__sub {
+  margin: 0;
+  font-size: clamp(0.82rem, 2.1vw, 1.02rem);
+  color: var(--muted);
+}
+
+.kiosk-mode .playfield--arcade {
+  padding-top: 2.25rem;
+  padding-bottom: 2.25rem;
+}
+
+.kiosk-mode .playfield--arcade::before,
+.kiosk-mode .playfield--arcade::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 10px;
+  background-color: #fff;
+  box-shadow: 0 0 30px 0 rgba(255, 255, 255, 0.9);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.kiosk-mode .playfield--arcade::before {
+  top: 0;
+}
+
+.kiosk-mode .playfield--arcade::after {
+  bottom: 0;
+}
+
+.timer-bar__track {
+  display: none;
+}
+
+.kiosk-mode .timer-bar {
+  position: relative;
+  height: 24px;
+  margin-top: 0.65rem;
+  margin-bottom: 1.35rem;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  overflow: visible;
+}
+
+.kiosk-mode .timer-bar__track {
+  display: block;
+  position: absolute;
+  inset: 0;
+  background-color: #bfbfbf;
+  box-shadow: 0 0 10px rgba(191, 191, 191, 0.4);
+}
+
+.kiosk-mode .timer-bar__fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 0%;
+  border-radius: 0;
+  background: var(--brand);
+  background-image: none;
+  box-shadow: 0 0 10px rgba(232, 196, 92, 0.55);
+  transition: width 16.6ms linear;
+}
+
 .kiosk-menu {
   margin-top: 1rem;
   padding-top: 0.85rem;

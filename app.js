@@ -3,6 +3,11 @@
   const STORAGE_KEY = "stratagem-hero-config-v5";
   const LEGACY_STORAGE_KEYS = ["stratagem-hero-config-v4", "stratagem-hero-config-v3"];
   const DEFAULT_LEVELS = 10;
+  /** drizzer14/stratagem-hero timer: ~60 Hz tick, constant drain, refill per stratagem. */
+  const DRIZZER_TICK_MS = 1000 / 60;
+  const DRIZZER_PRESSURE_DEC = 0.2;
+  const DRIZZER_PRESSURE_BONUS = 20.664;
+  const NORMAL_TICK_MS = 120;
   /** Local Helldivers-style direction arrows (see assets/THIRD_PARTY.txt). */
   const ARROW_IMG = {
     up: "assets/images/arrows/arrow-up.svg",
@@ -311,6 +316,19 @@
         btnExit.style.display = "none";
       }
     }
+    updateKioskArcadeSplash();
+  }
+
+  function updateKioskArcadeSplash() {
+    const splash = el("kioskArcadeSplash");
+    const pf = el("playfield");
+    if (pf) pf.classList.toggle("playfield--arcade", isKioskMode());
+    if (!splash) return;
+    splash.hidden = !(isKioskMode() && (!run || !run.active));
+  }
+
+  function usesKioskPressureTimer() {
+    return isKioskMode() && run && run.active && run.kioskPreset;
   }
 
   function formatSessionLeft(ms) {
@@ -382,6 +400,28 @@
       msg = t("kioskTimedEndMsg").replace("{score}", String(score));
     }
     showKioskResultModal(title, msg);
+    updateKioskArcadeSplash();
+  }
+
+  function kioskPressureDepleted() {
+    if (tickHandle) clearInterval(tickHandle);
+    tickHandle = null;
+    const score = run ? run.score : 0;
+    if (run) run.active = false;
+    touchStart = null;
+    setPlayfieldTouchMode(false);
+    el("stratAudio").pause();
+    updateTimerHud();
+    updateSessionHud();
+    updateErrorsHud();
+    setStratagemIcon(null);
+    applyGlobalBackgrounds();
+    el("playHint").textContent = t("kioskPickMode");
+    showKioskResultModal(
+      t("kioskPressureEndTitle"),
+      t("kioskPressureEndMsg").replace("{score}", String(score))
+    );
+    updateKioskArcadeSplash();
   }
 
   function kioskPresetHint(preset) {
@@ -427,6 +467,7 @@
       runBase.sessionTotalMs = 300000;
     }
     run = runBase;
+    run.pressureProgress = 100;
     el("hudScore").textContent = "0";
     el("hudCombo").textContent = "×0";
     el("hudLevel").textContent = `${t("level")} 1`;
@@ -434,7 +475,8 @@
     updateErrorsHud();
     updateSessionHud();
     if (tickHandle) clearInterval(tickHandle);
-    tickHandle = setInterval(tick, 120);
+    tickHandle = setInterval(tick, DRIZZER_TICK_MS);
+    updateKioskArcadeSplash();
     startNewChallenge();
   }
 
@@ -449,6 +491,7 @@
     });
     const sel = el("localeSelect");
     if (sel) sel.value = cfg.locale;
+    updateKioskArcadeSplash();
   }
 
   function showPanel(name) {
@@ -613,7 +656,27 @@
   function updateTimerHud() {
     const timerEl = el("hudTimer");
     const fill = el("timerBarFill");
+    const bar = el("timerBar");
     if (!timerEl || !fill) return;
+
+    if (usesKioskPressureTimer()) {
+      const p = Math.max(0, Math.min(100, Number(run.pressureProgress) || 0));
+      timerEl.textContent = "";
+      fill.style.width = `${p}%`;
+      if (bar) {
+        bar.setAttribute("aria-hidden", "false");
+        bar.setAttribute("aria-valuenow", String(Math.round(p)));
+        bar.setAttribute("aria-label", t("kioskTimerAria"));
+      }
+      return;
+    }
+
+    if (bar) {
+      bar.setAttribute("aria-hidden", "true");
+      bar.setAttribute("aria-valuenow", "0");
+      bar.removeAttribute("aria-label");
+    }
+
     if (!run || !run.active || !run.current || run.current.empty) {
       timerEl.textContent = "—";
       fill.style.width = "0%";
@@ -765,6 +828,11 @@
       totalMs: budget,
       startedAt: Date.now(),
     };
+    if (usesKioskPressureTimer()) {
+      const far = Date.now() + 86400000 * 7;
+      run.current.deadline = far;
+      run.current.totalMs = far - Date.now();
+    }
     el("stratagemCategory").textContent = stratCategoryLabel(strat.category);
     el("stratagemName").textContent = stratName(strat);
     const card = el("stratagemCard");
@@ -795,6 +863,7 @@
     updateTimerHud();
     updateSessionHud();
     updateErrorsHud();
+    updateKioskArcadeSplash();
   }
 
   function showGameOverModal() {
@@ -838,6 +907,7 @@
   function hideGameOverModal() {
     const modal = el("gameOverModal");
     if (modal) modal.hidden = true;
+    updateKioskArcadeSplash();
   }
 
   function gameOverFromErrors() {
@@ -854,6 +924,7 @@
     showGameOverModal();
     setStratagemIcon(null);
     applyGlobalBackgrounds();
+    updateKioskArcadeSplash();
   }
 
   function registerFailError(reason) {
@@ -889,6 +960,9 @@
   }
 
   function onSuccess() {
+    if (usesKioskPressureTimer()) {
+      run.pressureProgress = Math.min(100, (Number(run.pressureProgress) || 0) + DRIZZER_PRESSURE_BONUS);
+    }
     const spec = currentLevelSpec();
     const add = Number(spec.successPoints);
     run.score += Number.isFinite(add) && add >= 0 ? add : 1;
@@ -935,9 +1009,11 @@
         onSuccess();
       } else {
         run.current.index = next;
-        const slice = timeForStratagem(strat);
-        run.current.deadline = Date.now() + slice;
-        run.current.totalMs = slice;
+        if (!usesKioskPressureTimer()) {
+          const slice = timeForStratagem(strat);
+          run.current.deadline = Date.now() + slice;
+          run.current.totalMs = slice;
+        }
         renderArrowPreview(strat, next, false);
         updateTimerHud();
       }
@@ -1053,6 +1129,22 @@
       updateTimerHud();
       return;
     }
+    if (usesKioskPressureTimer()) {
+      if (run.sessionDeadline != null && Date.now() >= run.sessionDeadline) {
+        kioskEndReason(run.kioskPreset === "marathon5" ? "marathon" : "sprint");
+        return;
+      }
+      if (!run.current) {
+        updateTimerHud();
+        return;
+      }
+      run.pressureProgress = Math.max(0, (Number(run.pressureProgress) || 0) - DRIZZER_PRESSURE_DEC);
+      updateTimerHud();
+      if (run.pressureProgress <= 0) {
+        kioskPressureDepleted();
+      }
+      return;
+    }
     if (run.sessionDeadline != null && Date.now() >= run.sessionDeadline) {
       kioskEndReason(run.kioskPreset === "marathon5" ? "marathon" : "sprint");
       return;
@@ -1100,7 +1192,8 @@
     updateErrorsHud();
     updateSessionHud();
     if (tickHandle) clearInterval(tickHandle);
-    tickHandle = setInterval(tick, 120);
+    tickHandle = setInterval(tick, NORMAL_TICK_MS);
+    updateKioskArcadeSplash();
     startNewChallenge();
   }
 
@@ -1112,6 +1205,7 @@
     setStratagemIcon(null);
     applyGlobalBackgrounds();
     updateSessionHud();
+    updateKioskArcadeSplash();
   }
 
   function renderBindings() {

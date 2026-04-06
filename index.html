@@ -26,6 +26,11 @@
     <section id="panelPlay" class="panel active">
       <div id="youtubeBackdrop" class="youtube-backdrop" aria-hidden="true"></div>
       <div id="playfield" class="playfield">
+        <div id="kioskArcadeSplash" class="kiosk-arcade-splash" hidden>
+          <h2 class="kiosk-arcade-splash__title" data-i18n="kioskArcadeTitle">Stratagem Hero</h2>
+          <p class="kiosk-arcade-splash__prompt" data-i18n="kioskArcadePrompt">Press any Stratagem Input to Start!</p>
+          <p class="kiosk-arcade-splash__sub" data-i18n="kioskArcadeSub">Choose a festival mode below.</p>
+        </div>
         <div class="hud">
           <span id="hudLevel" data-i18n-prefix="level">—</span>
           <span id="hudScore">0</span>
@@ -43,7 +48,16 @@
         >
           <div id="hudErrors" class="hud-skulls"></div>
         </div>
-        <div class="timer-bar" aria-hidden="true">
+        <div
+          id="timerBar"
+          class="timer-bar"
+          role="progressbar"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          aria-valuenow="0"
+          aria-label=""
+        >
+          <div class="timer-bar__track" aria-hidden="true"></div>
           <div id="timerBarFill" class="timer-bar__fill"></div>
         </div>
         <div id="stratagemCard" class="stratagem-card">

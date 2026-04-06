@@ -1,5 +1,8 @@
 Stratagem permit-style SVG icons in assets/images/stratagems/ are from
 https://github.com/drizzer14/stratagem-hero (MIT License).
+Kiosk “pressure” timer behaviour and arcade UI cues mirror that project’s
+Timer component (global bar, ~60 Hz drain, +20.664 on success); gameplay
+elsewhere differs.
 super_earth.svg is from the same repository.
 
 Patch-themed playfield JPEGs in assets/backgrounds/patch-*.jpg are original
