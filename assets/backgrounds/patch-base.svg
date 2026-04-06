@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <radialGradient id="g" cx="55%" cy="35%" r="75%">
+      <stop offset="0%" stop-color="#1e2a3a"/>
+      <stop offset="55%" stop-color="#0d1018"/>
+      <stop offset="100%" stop-color="#050608"/>
+    </radialGradient>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#g)"/>
+  <text x="50%" y="94%" text-anchor="middle" fill="#8a7a50" font-family="Segoe UI,sans-serif" font-size="18" letter-spacing="0.35em" opacity="0.45">BASE</text>
+</svg>

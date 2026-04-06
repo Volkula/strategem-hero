@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Stratagem Hero (browser trainer)</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="top-bar">
+      <h1 data-i18n="appTitle">Stratagem Hero</h1>
+      <div class="top-actions">
+        <label class="inline">
+          <span data-i18n="locale">Locale</span>
+          <select id="localeSelect"></select>
+        </label>
+        <button type="button" id="btnSettings" data-i18n="settings">Settings</button>
+        <button type="button" id="btnEditor" data-i18n="editor">Editor</button>
+        <button type="button" id="btnPlay" data-i18n="play">Play</button>
+      </div>
+    </header>
+
+    <section id="panelPlay" class="panel active">
+      <div id="youtubeBackdrop" class="youtube-backdrop" aria-hidden="true"></div>
+      <div id="playfield" class="playfield">
+        <div class="hud">
+          <span id="hudLevel" data-i18n-prefix="level">—</span>
+          <span id="hudScore">0</span>
+          <span id="hudCombo">×0</span>
+        </div>
+        <div id="stratagemCard" class="stratagem-card">
+          <div class="stratagem-card__main">
+            <div class="stratagem-icon-wrap">
+              <img id="stratagemIcon" class="stratagem-icon stratagem-icon--hidden" alt="" width="120" height="120" />
+            </div>
+            <div class="stratagem-card__text">
+              <p class="cat" id="stratagemCategory"></p>
+              <h2 id="stratagemName"></h2>
+            </div>
+          </div>
+          <div id="arrowPreview" class="arrow-preview" aria-hidden="true"></div>
+        </div>
+        <p class="hint" id="playHint" data-i18n="playHint"></p>
+        <div class="play-controls">
+          <button type="button" id="btnStartRun" data-i18n="startRun">Start</button>
+          <button type="button" id="btnEndRun" data-i18n="endRun">End run</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="panelSettings" class="panel">
+      <h2 data-i18n="settingsTitle">Settings</h2>
+
+      <fieldset>
+        <legend data-i18n="themeAudio">Background theme (audio / video)</legend>
+        <label class="block">
+          <span data-i18n="themeType">Source</span>
+          <select id="themeType">
+            <option value="none" data-i18n="themeNone">None</option>
+            <option value="mp3" data-i18n="themeMp3">Local / URL MP3</option>
+            <option value="youtube" data-i18n="themeYoutube">YouTube (video or playlist URL)</option>
+          </select>
+        </label>
+        <label class="block">
+          <span data-i18n="mp3File">MP3 file</span>
+          <input type="file" id="mp3File" accept="audio/mpeg,audio/*" />
+        </label>
+        <label class="block">
+          <span data-i18n="mp3Url">MP3 URL (optional)</span>
+          <input type="url" id="mp3Url" placeholder="https://..." />
+        </label>
+        <label class="block">
+          <span data-i18n="youtubeUrl">YouTube URL</span>
+          <input type="url" id="youtubeUrl" placeholder="https://www.youtube.com/watch?v=... or playlist" />
+        </label>
+        <label class="inline">
+          <input type="checkbox" id="youtubeMute" />
+          <span data-i18n="youtubeMute">Mute YouTube (use only as visual background)</span>
+        </label>
+      </fieldset>
+
+      <fieldset>
+        <legend data-i18n="bindingsTitle">Direction keys (first match wins)</legend>
+        <p class="small" data-i18n="bindingsHelp">Click a field and press a key. Multiple keys per direction allowed.</p>
+        <div class="bind-grid" id="bindGrid"></div>
+      </fieldset>
+
+      <fieldset>
+        <legend data-i18n="levelsTitle">Speed by level</legend>
+        <p class="small" data-i18n="levelsHelp">Time limit to finish one full stratagem sequence (ms). Lower = harder.</p>
+        <div id="levelRows" class="level-rows"></div>
+      </fieldset>
+
+      <fieldset>
+        <legend data-i18n="appearanceTitle">Appearance</legend>
+        <label class="block">
+          <span data-i18n="terminalBackground">Terminal / app background (CSS)</span>
+          <input type="text" id="terminalBackground" placeholder="e.g. #0a0a0a or linear-gradient(...)" />
+        </label>
+        <label class="block">
+          <span data-i18n="terminalBgFile">Terminal background image (local file)</span>
+          <input type="file" id="terminalBgFile" accept="image/*" />
+        </label>
+        <div class="row-btns">
+          <button type="button" id="btnClearTerminalImg" data-i18n="clearTerminalImg">Remove terminal image</button>
+        </div>
+        <label class="block">
+          <span data-i18n="globalPlayfieldBg">Global playfield background (CSS)</span>
+          <input type="text" id="globalPlayfieldBg" placeholder="e.g. linear-gradient(...)" />
+        </label>
+        <label class="block">
+          <span data-i18n="globalCardBg">Global stratagem card background (CSS)</span>
+          <input type="text" id="globalCardBg" placeholder="optional" />
+        </label>
+        <label class="inline">
+          <input type="checkbox" id="includeIncomplete" />
+          <span data-i18n="includeIncomplete">Include stratagems with empty codes (practice)</span>
+        </label>
+        <label class="inline">
+          <input type="checkbox" id="usePatchBackgrounds" checked />
+          <span data-i18n="usePatchBackgrounds">Patch-themed playfield image by stratagem</span>
+        </label>
+        <label class="inline">
+          <input type="checkbox" id="superEarthWatermark" checked />
+          <span data-i18n="superEarthWatermark">Super Earth seal (local SVG) on playfield</span>
+        </label>
+        <label class="inline">
+          <input type="checkbox" id="enableSwipes" checked />
+          <span data-i18n="enableSwipes">Swipe on playfield for directions (touch)</span>
+        </label>
+        <label class="block">
+          <span data-i18n="swipeMinDistance">Swipe minimum distance (px)</span>
+          <input type="number" id="swipeMinDistance" min="24" max="200" step="4" value="48" />
+        </label>
+      </fieldset>
+
+      <fieldset>
+        <legend data-i18n="storageTitle">Config</legend>
+        <div class="row-btns">
+          <button type="button" id="btnSaveLocal" data-i18n="saveLocal">Save locally</button>
+          <button type="button" id="btnExportB64" data-i18n="exportB64">Copy Base64</button>
+          <button type="button" id="btnImportB64" data-i18n="importB64">Load from Base64</button>
+        </div>
+        <label class="block">
+          <span data-i18n="importFile">Load from file</span>
+          <input type="file" id="importFile" accept="application/json,.json" />
+        </label>
+        <label class="block">
+          <span data-i18n="importUrl">Load from URL</span>
+          <input type="url" id="importUrl" placeholder="https://.../config.json" />
+          <button type="button" id="btnImportUrl" data-i18n="fetch">Fetch</button>
+        </label>
+        <label class="block">
+          <span data-i18n="importClipboard">Load from clipboard</span>
+          <button type="button" id="btnImportClip" data-i18n="paste">Read clipboard</button>
+        </label>
+        <textarea id="b64Area" class="b64-area" rows="3" placeholder="Base64…"></textarea>
+      </fieldset>
+    </section>
+
+    <section id="panelEditor" class="panel">
+      <h2 data-i18n="editorTitle">Stratagem editor</h2>
+      <p class="small" data-i18n="editorHelp">Change codes, visuals, and music per stratagem. Overrides merge with the built-in wiki list.</p>
+      <label class="block">
+        <span data-i18n="pickStratagem">Stratagem</span>
+        <select id="editorStratSelect"></select>
+      </label>
+      <div class="editor-seq">
+        <span data-i18n="sequence">Sequence</span>
+        <div id="editorSeqDisplay" class="seq-display"></div>
+        <div class="seq-btns">
+          <button type="button" data-dir="up" class="dir-btn">↑</button>
+          <button type="button" data-dir="down" class="dir-btn">↓</button>
+          <button type="button" data-dir="left" class="dir-btn">←</button>
+          <button type="button" data-dir="right" class="dir-btn">→</button>
+          <button type="button" id="editorSeqPop" data-i18n="pop">Undo last</button>
+          <button type="button" id="editorSeqClear" data-i18n="clear">Clear</button>
+        </div>
+      </div>
+      <label class="block">
+        <span data-i18n="cardBackground">Card background (CSS)</span>
+        <input type="text" id="editorCardBg" placeholder="linear-gradient(...) or url(...)" />
+      </label>
+      <label class="block">
+        <span data-i18n="playfieldBackground">Playfield background (CSS, this stratagem only)</span>
+        <input type="text" id="editorPlayBg" placeholder="optional" />
+      </label>
+      <label class="block">
+        <span data-i18n="stratMusic">Override music (URL or empty)</span>
+        <input type="url" id="editorMusic" placeholder="https://.../track.mp3" />
+      </label>
+      <label class="block">
+        <span data-i18n="editorIconFile">Icon file (in assets/images/stratagems/, e.g. machine_gun.svg)</span>
+        <input type="text" id="editorIconFile" placeholder="machine_gun.svg" />
+      </label>
+      <div id="editorLevelSpeeds" class="editor-level-speeds"></div>
+      <label class="inline">
+        <input type="checkbox" id="editorVerified" />
+        <span data-i18n="markVerified">I verified this code in-game</span>
+      </label>
+      <div class="row-btns">
+        <button type="button" id="editorApply" data-i18n="apply">Apply override</button>
+        <button type="button" id="editorReset" data-i18n="resetOverride">Remove override</button>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <p class="small" data-i18n="footerNote"></p>
+    </footer>
+  </div>
+
+  <audio id="bgAudio" loop crossorigin="anonymous"></audio>
+  <audio id="stratAudio" crossorigin="anonymous"></audio>
+
+  <script src="i18n.js"></script>
+  <script src="assets-meta.js"></script>
+  <script src="stratagems-data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

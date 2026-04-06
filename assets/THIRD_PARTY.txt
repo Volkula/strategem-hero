@@ -1,0 +1,3 @@
+Stratagem permit-style SVG icons in assets/images/stratagems/ are from
+https://github.com/drizzer14/stratagem-hero (MIT License).
+super_earth.svg is from the same repository.
