@@ -12,8 +12,8 @@
     const t = n <= 1 ? 0 : (i - 1) / (n - 1);
     const timeMs = Math.round(Math.max(3200, 14600 - t * (14600 - 3400)));
     const successPoints = Math.max(1, Math.round(1 + t * 7));
-    const failPenaltyPoints = Math.min(6, Math.floor(0.25 + t * 5.25));
-    const wrongTimeDebtMs = Math.round(t * t * 1000);
+    const failPenaltyPoints = Math.min(6, Math.ceil(t * 5) || 0);
+    const wrongTimeDebtMs = Math.round(120 + t * t * 880);
     return {
       level: i,
       timeMs,
@@ -92,10 +92,26 @@
         level: lv,
         timeMs: pickNum(row, "timeMs", d.timeMs, 500),
         successPoints: pickNum(row, "successPoints", d.successPoints, 0),
-        failPenaltyPoints: pickNum(row, "failPenaltyPoints", 0, 0),
-        wrongTimeDebtMs: pickNum(row, "wrongTimeDebtMs", 0, 0),
+        failPenaltyPoints: pickNum(row, "failPenaltyPoints", d.failPenaltyPoints, 0),
+        wrongTimeDebtMs: pickNum(row, "wrongTimeDebtMs", d.wrongTimeDebtMs, 0),
       };
     });
+  }
+
+  /** Old saves had penalty/debt forced to 0 by wrong normalize fallbacks — restore from template curve. */
+  function repairAllZeroPenalties(levels) {
+    const def = buildDefaultLevels();
+    if (!Array.isArray(levels) || levels.length === 0) return false;
+    const allZero = levels.every((row) => (Number(row.failPenaltyPoints) || 0) === 0 && (Number(row.wrongTimeDebtMs) || 0) === 0);
+    if (!allZero) return false;
+    const templateHasPressure = def.some((d) => d.failPenaltyPoints > 0 || d.wrongTimeDebtMs > 200);
+    if (!templateHasPressure) return false;
+    levels.forEach((row, idx) => {
+      const d = def[idx] || def[def.length - 1];
+      row.failPenaltyPoints = d.failPenaltyPoints;
+      row.wrongTimeDebtMs = d.wrongTimeDebtMs;
+    });
+    return true;
   }
 
   function loadConfig() {
@@ -118,7 +134,8 @@
       }
       const merged = deepMerge(defaultConfig(), parsed);
       merged.version = 5;
-      if (legacyKey) saveConfig(merged);
+      const repaired = repairAllZeroPenalties(merged.levels);
+      if (repaired || legacyKey) saveConfig(merged);
       return merged;
     } catch {
       return defaultConfig();
