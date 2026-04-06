@@ -1,7 +1,11 @@
-/* global HD2_STRATAGEMS, SH2_I18N, HD2_ASSETS */
+/* global HD2_STRATAGEMS, SH2_I18N, HD2_ASSETS, QRCode, HD2_LOADING_LINES */
 (function () {
   const STORAGE_KEY = "stratagem-hero-config-v5";
   const LEGACY_STORAGE_KEYS = ["stratagem-hero-config-v4", "stratagem-hero-config-v3"];
+  const COOKIE_PREFIX = "sh5";
+  const COOKIE_CHUNK = 2800;
+  const COOKIE_MAX_CHUNKS = 28;
+  const COOKIE_MAX_AGE_SEC = 365 * 24 * 3600;
   const DEFAULT_LEVELS = 10;
   /** drizzer14/stratagem-hero timer: ~60 Hz tick, constant drain, refill per stratagem. */
   const DRIZZER_TICK_MS = 1000 / 60;
@@ -15,6 +19,8 @@
     left: "assets/images/arrows/arrow-left.svg",
     right: "assets/images/arrows/arrow-right.svg",
   };
+  /** Lives HUD skull uses local favicon asset (see assets/images/branding/). */
+  const HUD_SKULL_IMG_URL = "assets/images/branding/favicon-192.png";
 
   /** Progressive defaults: shorter time, higher rewards and harsher penalties on later levels. */
   function generatedLevelRow(i) {
@@ -75,14 +81,119 @@
         countTimeoutAsError: true,
         countWrongAsError: true,
       },
-      endScreen: {
+      endScreenDefeat: {
         title: "",
         message: "",
         linkUrl: "",
         linkText: "",
+        qrUrl: "",
         imageDataUrl: "",
       },
+      endScreenVictory: {
+        title: "",
+        message: "",
+        linkUrl: "",
+        linkText: "",
+        qrUrl: "",
+        imageDataUrl: "",
+      },
+      /** Short feedback when pressing direction keys (Web Audio beeps). */
+      directionSoundsMuted: false,
+      /** Space restarts the run (play panel; not while typing in inputs). */
+      restartOnSpace: false,
+      /** After a final screen in kiosk, auto-start the same festival preset. */
+      kioskAutoRestart: false,
+      /** Delay before kiosk auto-restart (ms). */
+      kioskAutoRestartDelayMs: 4000,
+      /** Bumped on every save; used to pick newer data between localStorage and cookies. */
+      savedAt: 0,
+      /** Howler master volume (0–1); classic StratagemHero.com-style SFX + music. */
+      sfxVolume: 0.82,
     };
+  }
+
+  function readCookieMap() {
+    const out = {};
+    if (!document.cookie) return out;
+    document.cookie.split(";").forEach((part) => {
+      const trimmed = part.trim();
+      const eq = trimmed.indexOf("=");
+      if (eq < 0) return;
+      const k = trimmed.slice(0, eq);
+      const v = trimmed.slice(eq + 1);
+      try {
+        out[k] = decodeURIComponent(v);
+      } catch {
+        out[k] = v;
+      }
+    });
+    return out;
+  }
+
+  function clearCookieShards(prefix) {
+    for (let i = 0; i < COOKIE_MAX_CHUNKS + 2; i++) {
+      document.cookie = `${prefix}_${i}=; path=/; max-age=0; SameSite=Lax`;
+    }
+    document.cookie = `${prefix}_n=; path=/; max-age=0; SameSite=Lax`;
+    document.cookie = `${prefix}_os=; path=/; max-age=0; SameSite=Lax`;
+  }
+
+  function readConfigFromCookies() {
+    const m = readCookieMap();
+    if (m[`${COOKIE_PREFIX}_os`] === "1") return null;
+    const n = parseInt(m[`${COOKIE_PREFIX}_n`], 10);
+    if (!Number.isFinite(n) || n < 1 || n > COOKIE_MAX_CHUNKS) return null;
+    let s = "";
+    for (let i = 0; i < n; i++) {
+      const part = m[`${COOKIE_PREFIX}_${i}`];
+      if (part === undefined) return null;
+      s += part;
+    }
+    try {
+      return JSON.parse(s);
+    } catch {
+      return null;
+    }
+  }
+
+  function writeConfigCookies(jsonStr) {
+    clearCookieShards(COOKIE_PREFIX);
+    const n = Math.ceil(jsonStr.length / COOKIE_CHUNK);
+    if (n > COOKIE_MAX_CHUNKS) {
+      document.cookie = `${COOKIE_PREFIX}_os=1; path=/; max-age=${COOKIE_MAX_AGE_SEC}; SameSite=Lax`;
+      document.cookie = `${COOKIE_PREFIX}_n=; path=/; max-age=0; SameSite=Lax`;
+      return;
+    }
+    document.cookie = `${COOKIE_PREFIX}_os=0; path=/; max-age=${COOKIE_MAX_AGE_SEC}; SameSite=Lax`;
+    document.cookie = `${COOKIE_PREFIX}_n=${n}; path=/; max-age=${COOKIE_MAX_AGE_SEC}; SameSite=Lax`;
+    for (let i = 0; i < n; i++) {
+      const slice = jsonStr.slice(i * COOKIE_CHUNK, (i + 1) * COOKIE_CHUNK);
+      document.cookie = `${COOKIE_PREFIX}_${i}=${encodeURIComponent(slice)}; path=/; max-age=${COOKIE_MAX_AGE_SEC}; SameSite=Lax`;
+    }
+  }
+
+  function emptyFinalScreen() {
+    return {
+      title: "",
+      message: "",
+      linkUrl: "",
+      linkText: "",
+      qrUrl: "",
+      imageDataUrl: "",
+    };
+  }
+
+  /** Old saves used a single `endScreen`; merge into defeat and normalize both blocks. */
+  function migrateFinalScreens(cfg) {
+    let dirty = false;
+    if (cfg.endScreen && typeof cfg.endScreen === "object") {
+      cfg.endScreenDefeat = deepMerge(deepMerge(emptyFinalScreen(), cfg.endScreenDefeat || {}), cfg.endScreen);
+      delete cfg.endScreen;
+      dirty = true;
+    }
+    cfg.endScreenDefeat = deepMerge(emptyFinalScreen(), cfg.endScreenDefeat || {});
+    cfg.endScreenVictory = deepMerge(emptyFinalScreen(), cfg.endScreenVictory || {});
+    return dirty;
   }
 
   function pickNum(row, key, fallback, minVal) {
@@ -137,15 +248,29 @@
           }
         }
       }
+      const cookieParsed = readConfigFromCookies();
+      if (raw && cookieParsed) {
+        try {
+          const lsP = JSON.parse(raw);
+          const ca = Number(cookieParsed.savedAt) || 0;
+          const lb = Number(lsP.savedAt) || 0;
+          if (ca > lb) raw = JSON.stringify(cookieParsed);
+        } catch {
+          /* keep raw */
+        }
+      } else if (!raw && cookieParsed) {
+        raw = JSON.stringify(cookieParsed);
+      }
       if (!raw) return defaultConfig();
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed.levels)) {
         parsed.levels = normalizeLevels(parsed.levels);
       }
       const merged = deepMerge(defaultConfig(), parsed);
+      const migratedScreens = migrateFinalScreens(merged);
       merged.version = 5;
       const repaired = repairAllZeroPenalties(merged.levels);
-      if (repaired || legacyKey) saveConfig(merged);
+      if (repaired || legacyKey || migratedScreens) saveConfig(merged, { suppressSettingsToast: true });
       return merged;
     } catch {
       return defaultConfig();
@@ -165,8 +290,24 @@
     return out;
   }
 
-  function saveConfig(cfg) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
+  /** After settings writes: show toast when Settings panel is open (see init). */
+  let afterSaveSettingsToast = () => {};
+
+  function saveConfig(cfg, opts) {
+    cfg.savedAt = Date.now();
+    const jsonStr = JSON.stringify(cfg);
+    try {
+      localStorage.setItem(STORAGE_KEY, jsonStr);
+    } catch {
+      /* quota */
+    }
+    try {
+      writeConfigCookies(jsonStr);
+    } catch {
+      /* cookie size / privacy mode */
+    }
+    if (opts && opts.suppressSettingsToast) return;
+    afterSaveSettingsToast();
   }
 
   function utf8ToBase64(str) {
@@ -201,24 +342,31 @@
       return null;
     }
     if (!videoId && !listId) return null;
+    /** Browsers allow muted autoplay reliably; unmuted often blocked until a user gesture. */
     const baseMute = youtubeMuted ? "1" : "0";
-    if (listId && !videoId) {
-      const q = new URLSearchParams({
-        list: listId,
-        autoplay: "1",
-        mute: baseMute,
-        controls: "0",
-        rel: "0",
-        playsinline: "1",
-      });
-      return `https://www.youtube-nocookie.com/embed/videoseries?${q.toString()}`;
+    let pageOrigin = "";
+    try {
+      pageOrigin = window.location.origin || "";
+    } catch {
+      pageOrigin = "";
     }
-    const params = new URLSearchParams({
+    const common = {
       autoplay: "1",
       mute: baseMute,
       controls: "0",
       rel: "0",
       playsinline: "1",
+      ...(pageOrigin ? { origin: pageOrigin } : {}),
+    };
+    if (listId && !videoId) {
+      const q = new URLSearchParams({
+        ...common,
+        list: listId,
+      });
+      return `https://www.youtube-nocookie.com/embed/videoseries?${q.toString()}`;
+    }
+    const params = new URLSearchParams({
+      ...common,
       loop: "1",
       playlist: videoId,
     });
@@ -251,6 +399,8 @@
 
   const cfg = loadConfig();
   let run = null;
+  /** Kiosk: delayed restart after closing the final modal. */
+  let kioskAutoRestartTimer = null;
   let bindTarget = null;
   let editorSeq = [];
   let touchStart = null;
@@ -258,6 +408,35 @@
   let lastKioskPreset = "easy";
 
   const el = (id) => document.getElementById(id);
+
+  let stratagemKeyAudioCtx = null;
+  const STRATAGEM_DIR_FREQ_HZ = { up: 523.25, down: 196, left: 392, right: 659.25 };
+
+  function playStratagemDirectionSound(dir) {
+    if (cfg.directionSoundsMuted) return;
+    const freq = STRATAGEM_DIR_FREQ_HZ[dir];
+    if (!freq) return;
+    try {
+      if (!stratagemKeyAudioCtx) {
+        stratagemKeyAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      const ctx = stratagemKeyAudioCtx;
+      if (ctx.state === "suspended") ctx.resume().catch(() => {});
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      const now = ctx.currentTime;
+      gain.gain.setValueAtTime(0.14, now);
+      gain.gain.exponentialRampToValueAtTime(0.0008, now + 0.07);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.075);
+    } catch {
+      /* ignore */
+    }
+  }
 
   function isKioskMode() {
     try {
@@ -302,6 +481,7 @@
         btnExit.style.display = "";
       }
     } else {
+      cancelKioskAutoRestart();
       document.documentElement.classList.remove("kiosk-mode");
       document.body.classList.remove("kiosk-mode");
       if (km) km.hidden = true;
@@ -325,7 +505,9 @@
     const pf = el("playfield");
     if (pf) pf.classList.toggle("playfield--arcade", isKioskMode());
     if (!splash) return;
-    splash.hidden = !(isKioskMode() && (!run || !run.active));
+    const classicOn = typeof ClassicStratagemHero !== "undefined" && ClassicStratagemHero.isActive();
+    const legacyRun = run && run.active;
+    splash.hidden = !(isKioskMode() && !classicOn && !legacyRun);
   }
 
   /** Kiosk: start 5‑min marathon automatically; any stratagem key also starts if idle. */
@@ -333,6 +515,7 @@
     if (!isKioskMode()) return;
     const panelPlay = el("panelPlay");
     if (!panelPlay || !panelPlay.classList.contains("active")) return;
+    if (typeof ClassicStratagemHero !== "undefined" && ClassicStratagemHero.isActive()) return;
     if (run && run.active) return;
     if (bindTarget) return;
     const modal = el("gameOverModal");
@@ -414,26 +597,106 @@
     node.textContent = `${t("kioskSession")} ${formatSessionLeft(run.sessionDeadline - Date.now())}`;
   }
 
-  function showKioskResultModal(title, message) {
+  function applyFinalScreenQr(qrUrl) {
+    const wrap = el("gameOverQrWrap");
+    const img = el("gameOverQr");
+    const url = (qrUrl || "").trim();
+    if (!wrap || !img) return;
+    img.removeAttribute("src");
+    img.alt = "";
+    if (!url) {
+      wrap.hidden = true;
+      return;
+    }
+    if (typeof QRCode === "undefined" || typeof QRCode.toDataURL !== "function") {
+      wrap.hidden = true;
+      return;
+    }
+    wrap.hidden = false;
+    QRCode.toDataURL(url, { margin: 2, width: 220 }, (err, dataUrl) => {
+      if (err || !dataUrl) {
+        wrap.hidden = true;
+        return;
+      }
+      img.src = dataUrl;
+      img.alt = url;
+    });
+  }
+
+  /**
+   * @param {"defeat"|"victory"} kind
+   * @param {number} score
+   * @param {{ title?: string, message?: string } | null} fallbacks — i18n strings; message may contain {score}
+   */
+  function showFinalScreenModal(kind, score, fallbacks) {
     const modal = el("gameOverModal");
     if (!modal) return;
-    const img = el("gameOverImage");
-    const link = el("gameOverLink");
+    const cfgKey = kind === "victory" ? "endScreenVictory" : "endScreenDefeat";
+    const es = deepMerge(emptyFinalScreen(), cfg[cfgKey] || {});
+    const defaultTitleKey = kind === "victory" ? "finalScreenVictoryDefaultTitle" : "finalScreenDefeatDefaultTitle";
+    const defaultScoreKey = kind === "victory" ? "finalScreenVictoryScoreLine" : "finalScreenDefeatScoreLine";
+    const scoreLine = t(defaultScoreKey).replace("{score}", String(score));
+
+    let title = (es.title || "").trim();
+    if (!title) title = (fallbacks && fallbacks.title) || t(defaultTitleKey);
+
+    let msg = (es.message || "").trim();
+    if (msg) {
+      msg = msg.replace(/\{score\}/g, String(score));
+    } else if (fallbacks && fallbacks.message) {
+      msg = String(fallbacks.message).replace(/\{score\}/g, String(score));
+    } else {
+      msg = scoreLine;
+    }
+
     el("gameOverTitleText").textContent = title;
-    el("gameOverMessageText").textContent = message;
-    if (img) {
-      img.hidden = true;
-      img.removeAttribute("src");
+    el("gameOverMessageText").textContent = msg;
+
+    const imgEl = el("gameOverImage");
+    const data = (es.imageDataUrl || "").trim();
+    if (imgEl) {
+      if (data) {
+        imgEl.src = data;
+        imgEl.hidden = false;
+        imgEl.alt = "";
+      } else {
+        imgEl.removeAttribute("src");
+        imgEl.hidden = true;
+      }
     }
+
+    const link = el("gameOverLink");
+    const url = (es.linkUrl || "").trim();
+    const linkText = (es.linkText || "").trim() || url;
     if (link) {
-      link.hidden = true;
-      link.removeAttribute("href");
-      link.textContent = "";
+      if (url) {
+        link.href = url;
+        link.textContent = linkText;
+        link.hidden = false;
+      } else {
+        link.hidden = true;
+        link.removeAttribute("href");
+        link.textContent = "";
+      }
     }
+
+    applyFinalScreenQr(es.qrUrl);
     modal.hidden = false;
+    const closeBtn = el("gameOverClose");
+    if (closeBtn) {
+      requestAnimationFrame(() => {
+        try {
+          closeBtn.focus({ preventScroll: true });
+        } catch {
+          closeBtn.focus();
+        }
+      });
+    }
+    updateKioskArcadeSplash();
   }
 
   function kioskEndReason(kind) {
+    stopLoadingLineTicker();
     if (tickHandle) clearInterval(tickHandle);
     tickHandle = null;
     const score = run ? run.score : 0;
@@ -448,23 +711,26 @@
     setStratagemIcon(null);
     applyGlobalBackgrounds();
     el("playHint").textContent = t("kioskPickMode");
-    let title;
-    let msg;
     if (kind === "lottery") {
-      title = t("kioskLotteryEndTitle");
-      msg = t("kioskLotteryEndMsg").replace("{score}", String(score));
+      showFinalScreenModal("defeat", score, {
+        title: t("kioskLotteryEndTitle"),
+        message: t("kioskLotteryEndMsg"),
+      });
     } else if (kind === "marathon") {
-      title = t("kioskMarathonEndTitle");
-      msg = t("kioskTimedEndMsg").replace("{score}", String(score));
+      showFinalScreenModal("victory", score, {
+        title: t("kioskMarathonEndTitle"),
+        message: t("kioskTimedEndMsg"),
+      });
     } else {
-      title = t("kioskSprintEndTitle");
-      msg = t("kioskTimedEndMsg").replace("{score}", String(score));
+      showFinalScreenModal("victory", score, {
+        title: t("kioskSprintEndTitle"),
+        message: t("kioskTimedEndMsg"),
+      });
     }
-    showKioskResultModal(title, msg);
-    updateKioskArcadeSplash();
   }
 
   function kioskPressureDepleted() {
+    stopLoadingLineTicker();
     if (tickHandle) clearInterval(tickHandle);
     tickHandle = null;
     const score = run ? run.score : 0;
@@ -479,11 +745,10 @@
     setStratagemIcon(null);
     applyGlobalBackgrounds();
     el("playHint").textContent = t("kioskPickMode");
-    showKioskResultModal(
-      t("kioskPressureEndTitle"),
-      t("kioskPressureEndMsg").replace("{score}", String(score))
-    );
-    updateKioskArcadeSplash();
+    showFinalScreenModal("defeat", score, {
+      title: t("kioskPressureEndTitle"),
+      message: t("kioskPressureEndMsg"),
+    });
   }
 
   function kioskPresetHint(preset) {
@@ -501,50 +766,53 @@
     const list = getStratagemList(cfg);
     const pool = eligiblePool(cfg, list);
     if (!pool.length) {
-      el("playHint").textContent = t("noCodeWarning");
+      const ph = el("playHint");
+      if (ph) {
+        ph.textContent = t("noCodeWarning");
+        ph.hidden = false;
+      }
       setPlayfieldTouchMode(false);
       return;
     }
+    const ph = el("playHint");
+    if (ph) ph.hidden = true;
     lastKioskPreset = preset;
     hideGameOverModal();
-    const runBase = {
-      active: true,
-      score: 0,
-      combo: 0,
-      level: 1,
-      current: null,
-      errors: 0,
-      penaltyDebtMs: 0,
-      kioskPreset: preset,
-      noPenalties: preset === "easy",
-      lotteryOneShot: preset === "lottery",
-      sessionDeadline: null,
-      sessionTotalMs: null,
-    };
-    if (preset === "sprint30") {
-      runBase.sessionDeadline = Date.now() + 30000;
-      runBase.sessionTotalMs = 30000;
-    } else if (preset === "marathon5") {
-      runBase.sessionDeadline = Date.now() + 300000;
-      runBase.sessionTotalMs = 300000;
-    }
-    run = runBase;
-    run.pressureProgress = 100;
-    initRunAutomatonState(run);
-    el("hudScore").textContent = "0";
-    el("hudCombo").textContent = "×0";
-    el("hudLevel").textContent = `${t("level")} 1`;
-    el("playHint").textContent = kioskPresetHint(preset);
-    updateErrorsHud();
-    updateSessionHud();
-    if (tickHandle) clearInterval(tickHandle);
-    tickHandle = setInterval(tick, DRIZZER_TICK_MS);
+    stopLegacyRunOnly();
+    if (typeof ClassicStratagemHero === "undefined") return;
+    if (ClassicStratagemHero.isActive()) ClassicStratagemHero.stop();
+    ClassicStratagemHero.start(getClassicKioskOpts(preset));
+    ClassicStratagemHero.beginFromButton();
     updateKioskArcadeSplash();
-    startNewChallenge();
   }
 
   function t(key) {
     return SH2_I18N.t(cfg.locale, key);
+  }
+
+  let settingsSavedToastTimer = null;
+  function showSettingsSavedToast() {
+    const node = el("settingsSavedToast");
+    if (!node) return;
+    node.textContent = t("settingsSaved");
+    node.hidden = false;
+    node.classList.add("settings-saved-toast--show");
+    clearTimeout(settingsSavedToastTimer);
+    settingsSavedToastTimer = setTimeout(() => {
+      node.classList.remove("settings-saved-toast--show");
+      node.hidden = true;
+    }, 2200);
+  }
+
+  function syncDirectionSoundsMuteUi() {
+    const muted = !!cfg.directionSoundsMuted;
+    const btn = el("btnDirectionSoundsMute");
+    if (btn) {
+      btn.setAttribute("aria-pressed", muted ? "true" : "false");
+      btn.textContent = muted ? t("directionSoundsUnmute") : t("directionSoundsMute");
+    }
+    const cb = el("directionSoundsMutedCheck");
+    if (cb) cb.checked = muted;
   }
 
   function applyI18nDom() {
@@ -554,6 +822,7 @@
     });
     const sel = el("localeSelect");
     if (sel) sel.value = cfg.locale;
+    syncDirectionSoundsMuteUi();
     updateKioskArcadeSplash();
   }
 
@@ -563,6 +832,14 @@
     const id = map[name] || "panelPlay";
     const panel = el(id);
     if (panel) panel.classList.add("active");
+    if (name !== "play") {
+      stopLoadingLineTicker();
+      if (typeof ClassicStratagemHero !== "undefined" && ClassicStratagemHero.isActive()) {
+        ClassicStratagemHero.stop();
+      }
+    } else {
+      ensureClassicAttractMode();
+    }
   }
 
   function applyTerminalBackground() {
@@ -599,8 +876,10 @@
         const iframe = document.createElement("iframe");
         iframe.src = src;
         iframe.title = "YouTube background";
-        iframe.loading = "lazy";
-        iframe.allow = "autoplay; encrypted-media; picture-in-picture";
+        /* Do not use loading="lazy" — delayed load breaks autoplay policy / player start. */
+        iframe.allow =
+          "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+        iframe.setAttribute("referrerpolicy", "strict-origin-when-cross-origin");
         backdrop.appendChild(iframe);
       }
     } else if (cfg.theme.type === "mp3") {
@@ -712,6 +991,147 @@
     return t(`category_${cat}`);
   }
 
+  function getNormalClassicOpts() {
+    return {
+      timeTotal: 10000,
+      renewTimeEachRound: true,
+      freezeTimer: false,
+      failOnWrong: false,
+      sessionDeadline: null,
+    };
+  }
+
+  function getClassicKioskOpts(preset) {
+    if (preset === "easy") {
+      return {
+        timeTotal: 999999999,
+        renewTimeEachRound: true,
+        freezeTimer: true,
+        failOnWrong: false,
+        sessionDeadline: null,
+      };
+    }
+    if (preset === "sprint30") {
+      return {
+        timeTotal: 30000,
+        renewTimeEachRound: false,
+        freezeTimer: false,
+        failOnWrong: false,
+        sessionDeadline: Date.now() + 30000,
+      };
+    }
+    if (preset === "lottery") {
+      return {
+        timeTotal: 10000,
+        renewTimeEachRound: true,
+        freezeTimer: false,
+        failOnWrong: true,
+        sessionDeadline: null,
+      };
+    }
+    return {
+      timeTotal: 120000,
+      renewTimeEachRound: false,
+      freezeTimer: false,
+      failOnWrong: false,
+      sessionDeadline: Date.now() + 300000,
+    };
+  }
+
+  function handleClassicGameOver(finalScore, reason) {
+    stopLoadingLineTicker();
+    if (!isKioskMode()) return;
+    const preset = lastKioskPreset;
+    if (preset === "lottery" && (reason === "wrong" || reason === "time")) {
+      ClassicStratagemHero.stop();
+      showFinalScreenModal("defeat", finalScore, {
+        title: t("kioskLotteryEndTitle"),
+        message: t("kioskLotteryEndMsg"),
+      });
+      updateKioskArcadeSplash();
+      return;
+    }
+    if (preset === "sprint30" && (reason === "time" || reason === "session")) {
+      ClassicStratagemHero.stop();
+      showFinalScreenModal("victory", finalScore, {
+        title: t("kioskSprintEndTitle"),
+        message: t("kioskTimedEndMsg"),
+      });
+      updateKioskArcadeSplash();
+      return;
+    }
+    if (preset === "marathon5" && (reason === "session" || reason === "time")) {
+      ClassicStratagemHero.stop();
+      showFinalScreenModal("victory", finalScore, {
+        title: t("kioskMarathonEndTitle"),
+        message: t("kioskTimedEndMsg"),
+      });
+      updateKioskArcadeSplash();
+    }
+  }
+
+  function initClassicStratagemHero() {
+    const root = el("classicGameRoot");
+    if (!root || typeof ClassicStratagemHero === "undefined") return;
+    const vol = Number(cfg.sfxVolume);
+    ClassicStratagemHero.init({
+      root,
+      getPool: () => eligiblePool(cfg, getStratagemList(cfg)),
+      stratName: (s) => stratName(s),
+      stratIconUrl: (s) => HD2_ASSETS.resolveStratagemIconUrl(s.id, s.iconFile),
+      fallbackIcon: HD2_ASSETS.stratagemIconDir + HD2_ASSETS.placeholderIcon,
+      arrowUrls: ARROW_IMG,
+      readyLines: typeof HD2_LOADING_LINES !== "undefined" ? HD2_LOADING_LINES : [],
+      initialVolume: Number.isFinite(vol) ? Math.max(0, Math.min(1, vol)) : 0.82,
+      t,
+      onStart: () => {
+        startLoadingLineTicker();
+      },
+      onStop: () => {
+        stopLoadingLineTicker();
+      },
+      onGameOver: (finalScore, gameOverReason) => {
+        handleClassicGameOver(finalScore, gameOverReason);
+      },
+      onVolumeChange: (v) => {
+        cfg.sfxVolume = v;
+        saveConfig(cfg, { suppressSettingsToast: true });
+      },
+      onScreenChange: () => {
+        updatePlayfieldTouchCapture();
+      },
+    });
+  }
+
+  function ensureClassicAttractMode() {
+    if (typeof ClassicStratagemHero === "undefined") return;
+    const pool = eligiblePool(cfg, getStratagemList(cfg));
+    const ph = el("playHint");
+    if (!pool.length) {
+      if (ph) {
+        ph.textContent = t("noCodeWarning");
+        ph.hidden = false;
+      }
+      return;
+    }
+    if (ph) ph.hidden = true;
+    if (!ClassicStratagemHero.isActive()) {
+      const opts = isKioskMode() ? getClassicKioskOpts(lastKioskPreset || "marathon5") : getNormalClassicOpts();
+      ClassicStratagemHero.start(opts);
+    }
+  }
+
+  function stopLegacyRunOnly() {
+    if (tickHandle) clearInterval(tickHandle);
+    tickHandle = null;
+    if (run) run.active = false;
+    run = null;
+    clearAutomatonTakeoverForRunEnd();
+    touchStart = null;
+    setPlayfieldTouchMode(false);
+    el("stratAudio").pause();
+  }
+
   function currentLevelSpec() {
     const lv = run ? run.level : 1;
     const row = cfg.levels.find((l) => l.level === lv) || cfg.levels[0];
@@ -771,7 +1191,7 @@
     wrap.setAttribute("aria-hidden", "true");
     const img = document.createElement("img");
     img.className = "hud-skull__img";
-    img.src = "assets/images/hud-skull-hd2-emblem.svg";
+    img.src = HUD_SKULL_IMG_URL;
     img.alt = "";
     img.decoding = "async";
     wrap.appendChild(img);
@@ -813,6 +1233,7 @@
 
   function renderArrowPreview(strat, progressIndex, wrong) {
     const box = el("arrowPreview");
+    if (!box) return;
     box.innerHTML = "";
     strat.code.forEach((dir, i) => {
       let cls = "";
@@ -828,6 +1249,7 @@
 
   function startNewChallenge() {
     if (!run || !run.active) return;
+    if (!el("stratagemCard")) return;
     const list = getStratagemList(cfg);
     const pool = eligiblePool(cfg, list);
     if (!pool.length) {
@@ -900,8 +1322,41 @@
     updateSessionHud();
   }
 
+  let loadingLineRotateTimer = null;
+
+  function pickLoadingLine() {
+    const lines = typeof HD2_LOADING_LINES !== "undefined" && Array.isArray(HD2_LOADING_LINES) ? HD2_LOADING_LINES : [];
+    if (!lines.length) return "";
+    return lines[Math.floor(Math.random() * lines.length)];
+  }
+
+  function startLoadingLineTicker() {
+    const node = el("helldiversLoadingTicker");
+    if (!node) return;
+    node.hidden = false;
+    const cycle = () => {
+      node.textContent = pickLoadingLine();
+    };
+    cycle();
+    if (loadingLineRotateTimer) clearInterval(loadingLineRotateTimer);
+    loadingLineRotateTimer = setInterval(cycle, 11000);
+  }
+
+  function stopLoadingLineTicker() {
+    if (loadingLineRotateTimer) {
+      clearInterval(loadingLineRotateTimer);
+      loadingLineRotateTimer = null;
+    }
+    const node = el("helldiversLoadingTicker");
+    if (node) {
+      node.hidden = true;
+      node.textContent = "";
+    }
+  }
+
   function endRun(msg) {
     if (run) run.active = false;
+    stopLoadingLineTicker();
     clearAutomatonTakeoverForRunEnd();
     touchStart = null;
     setPlayfieldTouchMode(false);
@@ -914,50 +1369,51 @@
   }
 
   function showGameOverModal() {
-    const modal = el("gameOverModal");
-    if (!modal) return;
-    const es = cfg.endScreen || defaultConfig().endScreen;
-    const title = (es.title || "").trim() || t("gameOverTitle");
-    const scoreLine = t("gameOverScoreLine").replace("{score}", String(run ? run.score : 0));
-    const msgBody = (es.message || "").trim() || scoreLine;
-    el("gameOverTitleText").textContent = title;
-    el("gameOverMessageText").textContent = msgBody;
-    const img = el("gameOverImage");
-    const data = (es.imageDataUrl || "").trim();
-    if (img) {
-      if (data) {
-        img.src = data;
-        img.hidden = false;
-        img.alt = "";
-      } else {
-        img.removeAttribute("src");
-        img.hidden = true;
-      }
-    }
-    const link = el("gameOverLink");
-    const url = (es.linkUrl || "").trim();
-    const linkText = (es.linkText || "").trim() || url;
-    if (link) {
-      if (url) {
-        link.href = url;
-        link.textContent = linkText;
-        link.hidden = false;
-      } else {
-        link.hidden = true;
-        link.removeAttribute("href");
-        link.textContent = "";
-      }
-    }
-    modal.hidden = false;
+    showFinalScreenModal("defeat", run ? run.score : 0, null);
   }
 
-  function hideGameOverModal() {
+  function cancelKioskAutoRestart() {
+    if (kioskAutoRestartTimer) {
+      clearTimeout(kioskAutoRestartTimer);
+      kioskAutoRestartTimer = null;
+    }
+  }
+
+  function scheduleKioskAutoRestartAfterModalClose() {
+    cancelKioskAutoRestart();
+    if (!isKioskMode()) return;
+    if (cfg.kioskAutoRestart) {
+      const d = Math.max(800, Math.min(120000, Number(cfg.kioskAutoRestartDelayMs) || 4000));
+      kioskAutoRestartTimer = setTimeout(() => {
+        kioskAutoRestartTimer = null;
+        if (!document.hidden) startKioskRun(lastKioskPreset || "marathon5");
+      }, d);
+      return;
+    }
+    autoMarathonIfKiosk();
+  }
+
+  /**
+   * @param {{ userClosedModal?: boolean } | undefined} opts - Pass userClosedModal when the player dismisses the final screen (enables kiosk auto-restart).
+   */
+  function hideGameOverModal(opts) {
     const modal = el("gameOverModal");
     if (modal) modal.hidden = true;
+    const qw = el("gameOverQrWrap");
+    const qi = el("gameOverQr");
+    if (qw) qw.hidden = true;
+    if (qi) {
+      qi.removeAttribute("src");
+      qi.alt = "";
+    }
     updateKioskArcadeSplash();
+    if (opts && opts.userClosedModal) {
+      scheduleKioskAutoRestartAfterModalClose();
+    }
   }
 
   function gameOverFromErrors() {
+    stopLoadingLineTicker();
     if (tickHandle) clearInterval(tickHandle);
     tickHandle = null;
     if (run) run.active = false;
@@ -1073,27 +1529,55 @@
   }
 
   function updatePlayfieldTouchCapture() {
+    const classicSwipe =
+      typeof ClassicStratagemHero !== "undefined" &&
+      ClassicStratagemHero.isActive() &&
+      ClassicStratagemHero.getScreen() === "in_game";
     const on =
       cfg.enableSwipes !== false &&
-      run &&
-      run.active &&
-      run.current &&
-      !run.current.empty &&
-      run.current.strat &&
-      run.current.strat.code &&
-      run.current.strat.code.length > 0;
+      (classicSwipe ||
+        (run &&
+          run.active &&
+          run.current &&
+          !run.current.empty &&
+          run.current.strat &&
+          run.current.strat.code &&
+          run.current.strat.code.length > 0));
     setPlayfieldTouchMode(on);
   }
 
   function onPlayfieldTouchStart(e) {
     if (cfg.enableSwipes === false || bindTarget) return;
+    const classicInGame =
+      typeof ClassicStratagemHero !== "undefined" &&
+      ClassicStratagemHero.isActive() &&
+      ClassicStratagemHero.getScreen() === "in_game";
+    if (classicInGame) {
+      const tch = e.changedTouches[0];
+      touchStart = { x: tch.clientX, y: tch.clientY, id: tch.identifier, time: Date.now() };
+      return;
+    }
     if (!run || !run.active || !run.current || run.current.empty) return;
-    const t = e.changedTouches[0];
-    touchStart = { x: t.clientX, y: t.clientY, id: t.identifier, time: Date.now() };
+    const tch = e.changedTouches[0];
+    touchStart = { x: tch.clientX, y: tch.clientY, id: tch.identifier, time: Date.now() };
   }
 
   function onPlayfieldTouchMove(e) {
-    if (!touchStart || cfg.enableSwipes === false || !run || !run.active || !run.current || run.current.empty) return;
+    if (!touchStart || cfg.enableSwipes === false || bindTarget) return;
+    const classicInGame =
+      typeof ClassicStratagemHero !== "undefined" &&
+      ClassicStratagemHero.isActive() &&
+      ClassicStratagemHero.getScreen() === "in_game";
+    if (classicInGame) {
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        if (e.changedTouches[i].identifier === touchStart.id) {
+          e.preventDefault();
+          return;
+        }
+      }
+      return;
+    }
+    if (!run || !run.active || !run.current || run.current.empty) return;
     for (let i = 0; i < e.changedTouches.length; i++) {
       if (e.changedTouches[i].identifier === touchStart.id) {
         e.preventDefault();
@@ -1104,20 +1588,50 @@
 
   function onPlayfieldTouchEnd(e) {
     if (!touchStart) return;
+    const classicInGame =
+      typeof ClassicStratagemHero !== "undefined" &&
+      ClassicStratagemHero.isActive() &&
+      ClassicStratagemHero.getScreen() === "in_game";
+    if (classicInGame) {
+      if (cfg.enableSwipes === false) {
+        touchStart = null;
+        return;
+      }
+      let tch = null;
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        if (e.changedTouches[i].identifier === touchStart.id) {
+          tch = e.changedTouches[i];
+          break;
+        }
+      }
+      if (!tch) return;
+      const dx = tch.clientX - touchStart.x;
+      const dy = tch.clientY - touchStart.y;
+      touchStart = null;
+      const min = Math.max(24, Number(cfg.swipeMinDistance) || 48);
+      if (Math.abs(dx) < min && Math.abs(dy) < min) return;
+      let dir = null;
+      if (Math.abs(dx) >= Math.abs(dy)) dir = dx > 0 ? "right" : "left";
+      else dir = dy > 0 ? "down" : "up";
+      e.preventDefault();
+      const map = { up: "U", down: "D", left: "L", right: "R" };
+      ClassicStratagemHero.applyTouchLetter(map[dir]);
+      return;
+    }
     if (cfg.enableSwipes === false || !run || !run.active || !run.current || run.current.empty) {
       touchStart = null;
       return;
     }
-    let t = null;
+    let tch = null;
     for (let i = 0; i < e.changedTouches.length; i++) {
       if (e.changedTouches[i].identifier === touchStart.id) {
-        t = e.changedTouches[i];
+        tch = e.changedTouches[i];
         break;
       }
     }
-    if (!t) return;
-    const dx = t.clientX - touchStart.x;
-    const dy = t.clientY - touchStart.y;
+    if (!tch) return;
+    const dx = tch.clientX - touchStart.x;
+    const dy = tch.clientY - touchStart.y;
     touchStart = null;
     const min = Math.max(24, Number(cfg.swipeMinDistance) || 48);
     if (Math.abs(dx) < min && Math.abs(dy) < min) return;
@@ -1136,6 +1650,7 @@
   }
 
   function handleKeyDown(e) {
+    const modal = el("gameOverModal");
     if (bindTarget) {
       e.preventDefault();
       const dir = bindTarget;
@@ -1154,9 +1669,52 @@
       return;
     }
 
+    if (modal && !modal.hidden && (e.code === "Enter" || e.code === "Space")) {
+      const ae = document.activeElement;
+      const tag = ae && ae.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || ae?.isContentEditable) {
+        return;
+      }
+      if (tag === "BUTTON" && modal.contains(ae)) {
+        return;
+      }
+      if (tag === "A" && modal.contains(ae) && ae.getAttribute("href") && ae.getAttribute("href") !== "#") {
+        return;
+      }
+      e.preventDefault();
+      hideGameOverModal({ userClosedModal: true });
+      return;
+    }
+
+    if (typeof ClassicStratagemHero !== "undefined" && ClassicStratagemHero.isActive()) {
+      if (ClassicStratagemHero.onKeyDown(e)) return;
+    }
+
+    const playPanel = el("panelPlay");
+    if (e.code === "Space" && cfg.restartOnSpace && playPanel && playPanel.classList.contains("active")) {
+      const ae = document.activeElement;
+      const tag = ae && ae.tagName;
+      if (tag !== "INPUT" && tag !== "TEXTAREA" && tag !== "SELECT" && !ae?.isContentEditable) {
+        const modalOpen = modal && !modal.hidden;
+        const classicOn = typeof ClassicStratagemHero !== "undefined" && ClassicStratagemHero.isActive();
+        const activeRun = (run && run.active) || classicOn;
+        if (modalOpen || activeRun) {
+          e.preventDefault();
+          cancelKioskAutoRestart();
+          hideGameOverModal();
+          if (isKioskMode()) {
+            startKioskRun(lastKioskPreset || "marathon5");
+          } else {
+            startRunClick();
+          }
+          return;
+        }
+      }
+    }
+
     if (isKioskMode() && (!run || !run.active)) {
-      const modal = el("gameOverModal");
-      if (!modal || modal.hidden) {
+      const classicOn = typeof ClassicStratagemHero !== "undefined" && ClassicStratagemHero.isActive();
+      if (!classicOn && (!modal || modal.hidden)) {
         let pressed = null;
         for (const d of ["up", "down", "left", "right"]) {
           if (cfg.bindings[d].includes(e.code)) {
@@ -1166,8 +1724,8 @@
         }
         if (pressed) {
           e.preventDefault();
-          startKioskRun("marathon5");
-          processDirectionInput(pressed);
+          startKioskRun(lastKioskPreset || "marathon5");
+          playStratagemDirectionSound(pressed);
           return;
         }
       }
@@ -1187,6 +1745,7 @@
     }
     if (!pressed) return;
     e.preventDefault();
+    playStratagemDirectionSound(pressed);
     processDirectionInput(pressed);
   }
 
@@ -1236,46 +1795,38 @@
     const list = getStratagemList(cfg);
     const pool = eligiblePool(cfg, list);
     if (!pool.length) {
-      el("playHint").textContent = t("noCodeWarning");
+      const ph = el("playHint");
+      if (ph) {
+        ph.textContent = t("noCodeWarning");
+        ph.hidden = false;
+      }
       setPlayfieldTouchMode(false);
       return;
     }
+    const ph = el("playHint");
+    if (ph) ph.hidden = true;
     hideGameOverModal();
-    run = {
-      active: true,
-      score: 0,
-      combo: 0,
-      level: 1,
-      current: null,
-      errors: 0,
-      penaltyDebtMs: 0,
-      kioskPreset: null,
-      noPenalties: false,
-      lotteryOneShot: false,
-      sessionDeadline: null,
-      sessionTotalMs: null,
-    };
-    initRunAutomatonState(run);
-    el("hudScore").textContent = "0";
-    el("hudCombo").textContent = "×0";
-    el("hudLevel").textContent = `${t("level")} 1`;
-    updateErrorsHud();
-    updateSessionHud();
-    if (tickHandle) clearInterval(tickHandle);
-    tickHandle = setInterval(tick, NORMAL_TICK_MS);
+    stopLegacyRunOnly();
+    if (typeof ClassicStratagemHero === "undefined") return;
+    if (ClassicStratagemHero.isActive()) ClassicStratagemHero.stop();
+    ClassicStratagemHero.start(getNormalClassicOpts());
+    ClassicStratagemHero.beginFromButton();
     updateKioskArcadeSplash();
-    startNewChallenge();
   }
 
   function endRunClick() {
-    if (tickHandle) clearInterval(tickHandle);
-    tickHandle = null;
+    if (typeof ClassicStratagemHero !== "undefined" && ClassicStratagemHero.isActive()) {
+      ClassicStratagemHero.stop();
+    }
+    stopLegacyRunOnly();
+    stopLoadingLineTicker();
     hideGameOverModal();
     endRun();
     setStratagemIcon(null);
     applyGlobalBackgrounds();
     updateSessionHud();
     updateKioskArcadeSplash();
+    ensureClassicAttractMode();
   }
 
   function renderBindings() {
@@ -1360,11 +1911,17 @@
     el("maxErrors").value = String(gr.maxErrors ?? 0);
     el("countTimeoutAsError").checked = gr.countTimeoutAsError !== false;
     el("countWrongAsError").checked = gr.countWrongAsError !== false;
-    const es = cfg.endScreen || defaultConfig().endScreen;
-    el("endScreenTitleField").value = es.title || "";
-    el("endScreenMessageField").value = es.message || "";
-    el("endScreenLinkUrl").value = es.linkUrl || "";
-    el("endScreenLinkText").value = es.linkText || "";
+
+    function syncFinalScreenForm(key, prefix) {
+      const es = deepMerge(emptyFinalScreen(), cfg[key] || {});
+      el(`${prefix}TitleField`).value = es.title || "";
+      el(`${prefix}MessageField`).value = es.message || "";
+      el(`${prefix}LinkUrl`).value = es.linkUrl || "";
+      el(`${prefix}LinkText`).value = es.linkText || "";
+      el(`${prefix}QrUrl`).value = es.qrUrl || "";
+    }
+    syncFinalScreenForm("endScreenDefeat", "endScreenDefeat");
+    syncFinalScreenForm("endScreenVictory", "endScreenVictory");
 
     el("themeType").value = cfg.theme.type;
     el("mp3Url").value = cfg.theme.mp3Url || "";
@@ -1378,8 +1935,17 @@
     el("terminalBackground").value = cfg.terminalBackground || "";
     el("enableSwipes").checked = cfg.enableSwipes !== false;
     el("swipeMinDistance").value = String(cfg.swipeMinDistance ?? 48);
+    const dsc = el("directionSoundsMutedCheck");
+    if (dsc) dsc.checked = !!cfg.directionSoundsMuted;
+    const rosEl = el("restartOnSpace");
+    if (rosEl) rosEl.checked = !!cfg.restartOnSpace;
+    const karEl = el("kioskAutoRestart");
+    if (karEl) karEl.checked = !!cfg.kioskAutoRestart;
+    const kardEl = el("kioskAutoRestartDelayMs");
+    if (kardEl) kardEl.value = String(Math.max(800, Number(cfg.kioskAutoRestartDelayMs) || 4000));
     renderBindings();
     renderLevelRows();
+    syncDirectionSoundsMuteUi();
   }
 
   function syncEditorStratSelect() {
@@ -1484,15 +2050,17 @@
       syncEditorStratSelect();
       if (run && run.current) {
         const s = run.current.strat;
-        el("stratagemName").textContent = stratName(s);
-        el("stratagemCategory").textContent = stratCategoryLabel(s.category);
+        const nm = el("stratagemName");
+        const cat = el("stratagemCategory");
+        if (nm) nm.textContent = stratName(s);
+        if (cat) cat.textContent = stratCategoryLabel(s.category);
         setStratagemIcon(s);
       }
     });
 
     el("btnPlay").addEventListener("click", () => {
       showPanel("play");
-      if (!run || !run.active) applyGlobalBackgrounds();
+      applyGlobalBackgrounds();
     });
     el("btnSettings").addEventListener("click", () => {
       showPanel("settings");
@@ -1504,19 +2072,60 @@
       loadEditorStrat();
     });
 
-    el("btnStartRun").addEventListener("click", startRunClick);
-    el("btnEndRun").addEventListener("click", endRunClick);
+    const btnStartRun = el("btnStartRun");
+    const btnEndRun = el("btnEndRun");
+    if (btnStartRun) btnStartRun.addEventListener("click", startRunClick);
+    if (btnEndRun) btnEndRun.addEventListener("click", endRunClick);
 
     el("gameOverClose").addEventListener("click", () => {
-      hideGameOverModal();
-      autoMarathonIfKiosk();
+      hideGameOverModal({ userClosedModal: true });
     });
     const goBd = el("gameOverBackdrop");
     if (goBd)
       goBd.addEventListener("click", () => {
-        hideGameOverModal();
-        autoMarathonIfKiosk();
+        hideGameOverModal({ userClosedModal: true });
       });
+
+    const btnSfx = el("btnDirectionSoundsMute");
+    if (btnSfx) {
+      btnSfx.addEventListener("click", () => {
+        cfg.directionSoundsMuted = !cfg.directionSoundsMuted;
+        saveConfig(cfg, { suppressSettingsToast: true });
+        syncDirectionSoundsMuteUi();
+        showSettingsSavedToast();
+      });
+    }
+    const dsc = el("directionSoundsMutedCheck");
+    if (dsc) {
+      dsc.addEventListener("change", () => {
+        cfg.directionSoundsMuted = dsc.checked;
+        saveConfig(cfg);
+        syncDirectionSoundsMuteUi();
+      });
+    }
+
+    const ros = el("restartOnSpace");
+    if (ros) {
+      ros.addEventListener("change", () => {
+        cfg.restartOnSpace = ros.checked;
+        saveConfig(cfg);
+      });
+    }
+    const kar = el("kioskAutoRestart");
+    if (kar) {
+      kar.addEventListener("change", () => {
+        cfg.kioskAutoRestart = kar.checked;
+        saveConfig(cfg);
+      });
+    }
+    const kard = el("kioskAutoRestartDelayMs");
+    if (kard) {
+      kard.addEventListener("change", () => {
+        cfg.kioskAutoRestartDelayMs = Math.max(800, Math.min(120000, Math.floor(Number(kard.value) || 4000)));
+        kard.value = String(cfg.kioskAutoRestartDelayMs);
+        saveConfig(cfg);
+      });
+    }
 
     el("maxErrors").addEventListener("change", () => {
       cfg.gameRules = cfg.gameRules || { ...defaultConfig().gameRules };
@@ -1535,43 +2144,49 @@
       cfg.gameRules.countWrongAsError = el("countWrongAsError").checked;
       saveConfig(cfg);
     });
-    el("endScreenTitleField").addEventListener("change", () => {
-      cfg.endScreen = cfg.endScreen || { ...defaultConfig().endScreen };
-      cfg.endScreen.title = el("endScreenTitleField").value;
-      saveConfig(cfg);
-    });
-    el("endScreenMessageField").addEventListener("change", () => {
-      cfg.endScreen = cfg.endScreen || { ...defaultConfig().endScreen };
-      cfg.endScreen.message = el("endScreenMessageField").value;
-      saveConfig(cfg);
-    });
-    el("endScreenLinkUrl").addEventListener("change", () => {
-      cfg.endScreen = cfg.endScreen || { ...defaultConfig().endScreen };
-      cfg.endScreen.linkUrl = el("endScreenLinkUrl").value.trim();
-      saveConfig(cfg);
-    });
-    el("endScreenLinkText").addEventListener("change", () => {
-      cfg.endScreen = cfg.endScreen || { ...defaultConfig().endScreen };
-      cfg.endScreen.linkText = el("endScreenLinkText").value;
-      saveConfig(cfg);
-    });
-    el("endScreenImageFile").addEventListener("change", (e) => {
-      const f = e.target.files && e.target.files[0];
-      if (!f) return;
-      const r = new FileReader();
-      r.onload = () => {
-        cfg.endScreen = cfg.endScreen || { ...defaultConfig().endScreen };
-        cfg.endScreen.imageDataUrl = String(r.result || "");
-        saveConfig(cfg);
+    function wireFinalScreenPanel(cfgKey, prefix) {
+      const base = () => {
+        cfg[cfgKey] = deepMerge(emptyFinalScreen(), cfg[cfgKey] || {});
+        return cfg[cfgKey];
       };
-      r.readAsDataURL(f);
-    });
-    el("btnClearEndScreenImage").addEventListener("click", () => {
-      cfg.endScreen = cfg.endScreen || { ...defaultConfig().endScreen };
-      cfg.endScreen.imageDataUrl = "";
-      el("endScreenImageFile").value = "";
-      saveConfig(cfg);
-    });
+      el(`${prefix}TitleField`).addEventListener("change", () => {
+        base().title = el(`${prefix}TitleField`).value;
+        saveConfig(cfg);
+      });
+      el(`${prefix}MessageField`).addEventListener("change", () => {
+        base().message = el(`${prefix}MessageField`).value;
+        saveConfig(cfg);
+      });
+      el(`${prefix}LinkUrl`).addEventListener("change", () => {
+        base().linkUrl = el(`${prefix}LinkUrl`).value.trim();
+        saveConfig(cfg);
+      });
+      el(`${prefix}LinkText`).addEventListener("change", () => {
+        base().linkText = el(`${prefix}LinkText`).value;
+        saveConfig(cfg);
+      });
+      el(`${prefix}QrUrl`).addEventListener("change", () => {
+        base().qrUrl = el(`${prefix}QrUrl`).value.trim();
+        saveConfig(cfg);
+      });
+      el(`${prefix}ImageFile`).addEventListener("change", (e) => {
+        const f = e.target.files && e.target.files[0];
+        if (!f) return;
+        const r = new FileReader();
+        r.onload = () => {
+          base().imageDataUrl = String(r.result || "");
+          saveConfig(cfg);
+        };
+        r.readAsDataURL(f);
+      });
+      el(`btnClear${prefix.charAt(0).toUpperCase() + prefix.slice(1)}Image`).addEventListener("click", () => {
+        base().imageDataUrl = "";
+        el(`${prefix}ImageFile`).value = "";
+        saveConfig(cfg);
+      });
+    }
+    wireFinalScreenPanel("endScreenDefeat", "endScreenDefeat");
+    wireFinalScreenPanel("endScreenVictory", "endScreenVictory");
 
     el("themeType").addEventListener("change", () => {
       cfg.theme.type = el("themeType").value;
@@ -1701,6 +2316,7 @@
       try {
         const next = JSON.parse(base64ToUtf8(raw));
         Object.assign(cfg, deepMerge(defaultConfig(), next));
+        migrateFinalScreens(cfg);
         saveConfig(cfg);
         syncSettingsForm();
         syncEditorStratSelect();
@@ -1721,6 +2337,7 @@
         try {
           const next = JSON.parse(String(r.result));
           Object.assign(cfg, deepMerge(defaultConfig(), next));
+          migrateFinalScreens(cfg);
           saveConfig(cfg);
           syncSettingsForm();
           syncEditorStratSelect();
@@ -1742,6 +2359,7 @@
         const res = await fetch(url);
         const next = await res.json();
         Object.assign(cfg, deepMerge(defaultConfig(), next));
+        migrateFinalScreens(cfg);
         saveConfig(cfg);
         syncSettingsForm();
         syncEditorStratSelect();
@@ -1764,6 +2382,7 @@
           next = JSON.parse(base64ToUtf8(text));
         }
         Object.assign(cfg, deepMerge(defaultConfig(), next));
+        migrateFinalScreens(cfg);
         saveConfig(cfg);
         syncSettingsForm();
         syncEditorStratSelect();
@@ -1828,6 +2447,12 @@
   }
 
   function init() {
+    afterSaveSettingsToast = () => {
+      const ps = el("panelSettings");
+      if (!ps || !ps.classList.contains("active")) return;
+      showSettingsSavedToast();
+    };
+    initClassicStratagemHero();
     syncKioskLayout();
     wireUi();
     initDirButtons();
@@ -1838,6 +2463,7 @@
     applyTheme();
     applyGlobalBackgrounds();
     applyTerminalBackground();
+    if (!isKioskMode()) ensureClassicAttractMode();
   }
 
   init();

@@ -1,3 +1,11 @@
+helldivers-loading-lines.js — Short in-universe style lines paraphrased or
+quoted from Wikiquote, “Helldivers 2” (Ship TV, General Brasch, Helldiver
+dialogue sections). Wikiquote text is CC-BY-SA:
+https://en.wikiquote.org/wiki/Helldivers_2
+
+assets/vendor/qrcode.min.js — QR code generation from the npm package
+“qrcode” (MIT): https://www.npmjs.com/package/qrcode
+
 Stratagem permit-style SVG icons in assets/images/stratagems/ are from
 https://github.com/drizzer14/stratagem-hero (MIT License).
 Kiosk “pressure” timer behaviour and arcade UI cues mirror that project’s
@@ -13,10 +21,11 @@ assets/fonts/automaton.otf — Automaton-typeface font supplied by the user for
 Cyberstan / Automaton-themed UI moments (rights remain with the respective
 owners).
 
-HUD “skull” icons use the Helldivers 2 emblem path from the Logopedia wiki
-(CC-BY-SA): https://logos.fandom.com/wiki/Helldivers_2
-File: assets/images/hud-skull-hd2-emblem.svg (yellow #ffe900 in file; “spent”
-lives are greyed via CSS).
+Header / in-game logo (WebP) and favicon / HUD skull (PNG) are vendored under
+assets/images/branding/ (originally from stratagemhero.com branding):
+  stratagem_hero.webp
+  favicon-192.png
+The local SVG skull (Logopedia CC-BY-SA) remains in the repo but is unused.
 
 Direction arrow SVGs in assets/images/arrows/ were sourced from Namu Wiki
 (i.namu.wiki); rights remain with the respective owners. Original URLs:
@@ -24,3 +33,11 @@ Direction arrow SVGs in assets/images/arrows/ were sourced from Namu Wiki
   arrow-up:    https://i.namu.wiki/i/OGNR5vk45ffMaCT0FkyA1M5nrn29SRNHJ7hR8geV5RRwRnETCNN-L1Za8fPjmrlSG28pjxi1icL5gu_mc03eOQUPJVTyz2SRGN2aPbV32flhxnt_fc-NITo7yjOKs5sLbqjx17CUS5nZmU6Herp57g.svg
   arrow-left:  https://i.namu.wiki/i/LK__8D4ObU1qKgbO0SFl9gtdf3Widy3IBYXD4As8UqefyXVi-UHqAt0Yppam1AfsFnjrhKALnEkmY6T6EJmhU7pxg9mf2UeRDQiXtOlMoEtxJOTWp4i83Fxh3ooeBO3nnTa9PCnpG2Xm9KQpnJpP1w.svg
   arrow-right: https://i.namu.wiki/i/AW2JjDk7AfLjyDCAFuyRsRUE6pL77irigQogvPk0WFLgBkBkoPowQz2Ib-mcK5Ae2KJyGwO3rU9Aig9IKa1S-7_Ofm681HkQY-nIgAXjOXQCvLXrJ-zQG14E6W8WBlBxoOyQRnOGlB6JtQfBDTPVaA.svg
+
+assets/vendor/howler.min.js — Howler.js v2.2.4 (MIT), copied from jsDelivr /
+npm “howler” for offline use.
+
+assets/audio/classic/*.mp3 — Classic mode SFX and loop music (same filenames as
+stratagemhero.com); vendored locally for offline play. Files:
+  button_press.mp3, button_press_error.mp3, sequence_success.mp3,
+  round_start_coin.mp3, game_music.mp3, round_over.mp3, game_over.mp3

@@ -4,12 +4,22 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Stratagem Hero (browser trainer)</title>
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/images/branding/favicon-192.png" />
+  <link rel="apple-touch-icon" href="assets/images/branding/favicon-192.png" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <div id="app" class="app-root">
     <header class="top-bar">
-      <h1 data-i18n="appTitle">Stratagem Hero</h1>
+      <div class="top-bar__brand">
+        <img
+          class="top-bar__logo"
+          src="assets/images/branding/stratagem_hero.webp"
+          alt="Stratagem Hero"
+          decoding="async"
+        />
+        <h1 class="visually-hidden" data-i18n="appTitle">Stratagem Hero</h1>
+      </div>
       <div class="top-actions">
         <label class="inline">
           <span data-i18n="locale">Locale</span>
@@ -20,8 +30,11 @@
         <button type="button" id="btnKiosk" data-i18n="btnKiosk">Kiosk</button>
         <button type="button" id="btnExitKiosk" data-i18n="btnExitKiosk" hidden>Game</button>
         <button type="button" id="btnPlay" data-i18n="play">Play</button>
+        <button type="button" id="btnDirectionSoundsMute" class="btn-sfx-mute" aria-pressed="false">Mute SFX</button>
       </div>
     </header>
+
+    <div id="settingsSavedToast" class="settings-saved-toast" hidden role="status" aria-live="polite"></div>
 
     <section id="panelPlay" class="panel active">
       <div id="youtubeBackdrop" class="youtube-backdrop" aria-hidden="true"></div>
@@ -32,52 +45,93 @@
           <p class="kiosk-arcade-splash__prompt" data-i18n="kioskArcadePrompt">Press any Stratagem Input to Start!</p>
           <p class="kiosk-arcade-splash__sub" data-i18n="kioskArcadeSub">Choose a festival mode below.</p>
         </div>
-        <div class="hud">
-          <span id="hudLevel" data-i18n-prefix="level">—</span>
-          <span id="hudScore">0</span>
-          <span id="hudCombo">×0</span>
-          <span id="hudSession" class="hud-session" hidden></span>
-          <span id="hudTimer" class="hud-timer" aria-live="polite">—</span>
-        </div>
-        <div
-          id="hudSkullsRow"
-          class="hud-skulls-row"
-          hidden
-          role="group"
-          aria-live="polite"
-          aria-label=""
-        >
-          <div id="hudErrors" class="hud-skulls"></div>
-        </div>
-        <div
-          id="timerBar"
-          class="timer-bar"
-          role="progressbar"
-          aria-valuemin="0"
-          aria-valuemax="100"
-          aria-valuenow="0"
-          aria-label=""
-        >
-          <div class="timer-bar__track" aria-hidden="true"></div>
-          <div id="timerBarFill" class="timer-bar__fill"></div>
-        </div>
-        <div id="stratagemCard" class="stratagem-card">
-          <div class="stratagem-card__main">
-            <div class="stratagem-icon-wrap">
-              <img id="stratagemIcon" class="stratagem-icon stratagem-icon--hidden" alt="" width="120" height="120" />
-            </div>
-            <div class="stratagem-card__text">
-              <p class="cat" id="stratagemCategory"></p>
-              <h2 id="stratagemName"></h2>
-            </div>
+
+        <div id="classicGameRoot" class="classic-game" hidden>
+          <div class="classic-game__banner">
+            <img
+              class="classic-game__logo"
+              src="assets/images/branding/stratagem_hero.webp"
+              alt=""
+              decoding="async"
+            />
           </div>
-          <div id="arrowPreview" class="arrow-preview" aria-hidden="true"></div>
+          <div class="classic-game__topbar">
+            <label class="classic-game__volume">
+              <span class="visually-hidden" data-i18n="classicVolumeAria">Game volume</span>
+              <input type="range" id="classicVolSlider" min="0" max="100" value="82" />
+              <span id="classicVolIcon" class="classic-game__vol-icon" aria-hidden="true">🔊</span>
+            </label>
+          </div>
+
+          <div id="classicScreenStart" class="classic-screen classic-screen--start">
+            <p class="classic-screen__title" data-i18n="classicPressToStart">Press any arrow key or WASD to start</p>
+            <p class="classic-screen__sub small" data-i18n="classicPressToStartSub">Swipe on the playfield on touch devices</p>
+          </div>
+
+          <div id="classicScreenRoundStarting" class="classic-screen" hidden>
+            <p class="classic-screen__eyebrow" data-i18n="classicGetReady">Get ready</p>
+            <p class="classic-screen__round">
+              <span data-i18n="classicRoundLabel">Round</span> <span id="classicRoundCount">1</span>
+            </p>
+            <p id="classicReadyText" class="classic-screen__ready"></p>
+          </div>
+
+          <div id="classicScreenGame" class="classic-screen classic-screen--game" hidden>
+            <div class="classic-game__hud">
+              <span
+                ><span data-i18n="classicRoundLabel">Round</span> <span id="classicInfoRound">1</span></span
+              >
+              <span
+                ><span data-i18n="classicScoreLabel">Score</span> <span id="classicInfoScore">0</span></span
+              >
+            </div>
+            <div id="classicStratList" class="classic-strat-list"></div>
+            <h2 id="classicActiveName" class="classic-active-name"></h2>
+            <div id="classicSeqHost" class="classic-seq-host"></div>
+            <div
+              class="classic-timer"
+              role="progressbar"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              aria-valuenow="100"
+            >
+              <div id="classicTimerFill" class="classic-timer__fill"></div>
+            </div>
+            <p id="helldiversLoadingTicker" class="classic-game__phrase-ticker" hidden aria-live="polite"></p>
+          </div>
+
+          <div id="classicScreenRoundOver" class="classic-screen classic-screen--round-over" hidden>
+            <p class="classic-ro__line">
+              <span data-i18n="classicRoundBonus">Round bonus</span> <span id="classicRoRoundBonus">0</span>
+            </p>
+            <p id="classicRoTimeLbl" class="classic-ro__line classic-ro--hidden" data-i18n="classicTimeBonus">
+              Time bonus
+            </p>
+            <p id="classicRoTimeBonus" class="classic-ro__line classic-ro--hidden">0</p>
+            <p id="classicRoPerfLbl" class="classic-ro__line classic-ro--hidden" data-i18n="classicPerfectBonus">
+              Perfect bonus
+            </p>
+            <p id="classicRoPerfectBonus" class="classic-ro__line classic-ro--hidden">0</p>
+            <p id="classicRoTotLbl" class="classic-ro__line classic-ro--hidden" data-i18n="classicTotalScore">
+              Total
+            </p>
+            <p id="classicRoTotal" class="classic-ro__line classic-ro--hidden">0</p>
+          </div>
+
+          <div id="classicScreenGameOver" class="classic-screen" hidden>
+            <p class="classic-screen__title" data-i18n="classicGameOver">Game over</p>
+            <p class="classic-go__score">
+              <span data-i18n="classicScoreLabel">Score</span> <span id="classicGoScore">0</span>
+            </p>
+            <p id="classicGoRestart" class="classic-screen__sub" hidden data-i18n="classicPressRestart">
+              Press Space or any direction to restart
+            </p>
+          </div>
+
+          <div id="classicGlitch" class="classic-game__glitch" hidden aria-hidden="true"></div>
         </div>
-        <p class="hint" id="playHint" data-i18n="playHint"></p>
-        <div class="play-controls" id="playControlsDefault">
-          <button type="button" id="btnStartRun" data-i18n="startRun">Start</button>
-          <button type="button" id="btnEndRun" data-i18n="endRun">End run</button>
-        </div>
+
+        <p class="hint play-hint-banner" id="playHint" hidden data-i18n="playHint"></p>
         <div id="kioskMenu" class="kiosk-menu" hidden>
           <p class="kiosk-menu__label" data-i18n="kioskMenuTitle">Festival modes</p>
           <div class="kiosk-menu__grid">
@@ -96,6 +150,10 @@
           <h2 id="gameOverTitleText" class="game-over-modal__title"></h2>
           <p id="gameOverMessageText" class="game-over-modal__msg"></p>
           <img id="gameOverImage" class="game-over-modal__img" alt="" hidden />
+          <div id="gameOverQrWrap" class="game-over-modal__qr-wrap" hidden>
+            <p class="game-over-modal__qr-caption small" data-i18n="finalScreenQrCaption">QR code (opens URL below)</p>
+            <img id="gameOverQr" class="game-over-modal__qr-img" width="220" height="220" alt="" />
+          </div>
           <p class="game-over-modal__link-wrap">
             <a id="gameOverLink" class="game-over-modal__link" href="#" target="_blank" rel="noopener noreferrer" hidden></a>
           </p>
@@ -141,6 +199,11 @@
         <summary class="settings-details__summary"><span data-i18n="bindingsTitle">Direction keys (first match wins)</span></summary>
         <div class="settings-details__inner">
           <p class="small" data-i18n="bindingsHelp">Click a field and press a key. Multiple keys per direction allowed.</p>
+          <label class="inline">
+            <input type="checkbox" id="directionSoundsMutedCheck" />
+            <span data-i18n="directionSoundsMutedLabel">Mute Stratagem direction key sounds</span>
+          </label>
+          <p class="small" data-i18n="directionSoundsKeyHelp">Short beep when you press a Stratagem direction key (keyboard only).</p>
           <div class="bind-grid" id="bindGrid"></div>
         </div>
       </details>
@@ -157,9 +220,9 @@
       </details>
 
       <details class="settings-details">
-        <summary class="settings-details__summary"><span data-i18n="gameRulesTitle">Lives &amp; defeat</span></summary>
+        <summary class="settings-details__summary"><span data-i18n="gameRulesTitle">Lives &amp; final screen</span></summary>
         <div class="settings-details__inner">
-          <p class="small" data-i18n="gameRulesHelp">0 lives = unlimited mistakes. When the limit is reached, the custom end screen opens.</p>
+          <p class="small" data-i18n="gameRulesHelp">0 = unlimited. When the limit is reached, the final screen (defeat) opens.</p>
           <label class="block">
             <span data-i18n="maxErrorsLabel">Max mistakes (0 = off)</span>
             <input type="number" id="maxErrors" min="0" max="99" step="1" value="0" />
@@ -176,31 +239,90 @@
       </details>
 
       <details class="settings-details">
-        <summary class="settings-details__summary"><span data-i18n="endScreenLegend">Defeat screen</span></summary>
+        <summary class="settings-details__summary"><span data-i18n="playKioskTitle">Play &amp; kiosk</span></summary>
         <div class="settings-details__inner">
-          <p class="small" data-i18n="endScreenHelp">Shown when you run out of lives. Optional link and image (stored in config as Base64).</p>
+          <p class="small" data-i18n="playKioskHelp">Same settings apply in normal play and ?kiosk=1. Cookies mirror the config when it fits browser limits.</p>
+          <label class="inline">
+            <input type="checkbox" id="restartOnSpace" />
+            <span data-i18n="restartOnSpaceLabel">Restart run with Space (play screen; not while typing in a field)</span>
+          </label>
+          <label class="inline">
+            <input type="checkbox" id="kioskAutoRestart" />
+            <span data-i18n="kioskAutoRestartLabel">Kiosk: auto-restart the same festival mode after the final screen</span>
+          </label>
+          <label class="block">
+            <span data-i18n="kioskAutoRestartDelayLabel">Auto-restart delay (ms)</span>
+            <input type="number" id="kioskAutoRestartDelayMs" min="800" max="120000" step="100" value="4000" />
+          </label>
+        </div>
+      </details>
+
+      <details class="settings-details">
+        <summary class="settings-details__summary"><span data-i18n="endScreenDefeatLegend">Final screen — defeat</span></summary>
+        <div class="settings-details__inner">
+          <p class="small" data-i18n="endScreenDefeatHelp">Shown when you run out of lives, kiosk lottery / pressure loss, etc. Use {score} in the message. QR encodes the URL you enter (for phones).</p>
           <label class="block">
             <span data-i18n="endScreenTitleField">Title</span>
-            <input type="text" id="endScreenTitleField" placeholder="" />
+            <input type="text" id="endScreenDefeatTitleField" placeholder="" />
           </label>
           <label class="block">
             <span data-i18n="endScreenMessageField">Message</span>
-            <textarea id="endScreenMessageField" rows="3" placeholder=""></textarea>
+            <textarea id="endScreenDefeatMessageField" rows="3" placeholder=""></textarea>
           </label>
           <label class="block">
             <span data-i18n="endScreenLinkUrl">Link URL</span>
-            <input type="url" id="endScreenLinkUrl" placeholder="https://..." />
+            <input type="url" id="endScreenDefeatLinkUrl" placeholder="https://..." />
           </label>
           <label class="block">
             <span data-i18n="endScreenLinkText">Link label</span>
-            <input type="text" id="endScreenLinkText" placeholder="" />
+            <input type="text" id="endScreenDefeatLinkText" placeholder="" />
           </label>
           <label class="block">
+            <span data-i18n="endScreenQrUrl">QR code URL</span>
+            <input type="url" id="endScreenDefeatQrUrl" placeholder="https://..." />
+          </label>
+          <p class="small" data-i18n="endScreenQrHelp">QR is generated from this link and shown on the final screen.</p>
+          <label class="block">
             <span data-i18n="endScreenImage">Image file</span>
-            <input type="file" id="endScreenImageFile" accept="image/*" />
+            <input type="file" id="endScreenDefeatImageFile" accept="image/*" />
           </label>
           <div class="row-btns">
-            <button type="button" id="btnClearEndScreenImage" data-i18n="clearEndScreenImage">Remove image</button>
+            <button type="button" id="btnClearEndScreenDefeatImage" data-i18n="clearEndScreenImage">Remove image</button>
+          </div>
+        </div>
+      </details>
+
+      <details class="settings-details">
+        <summary class="settings-details__summary"><span data-i18n="endScreenVictoryLegend">Final screen — victory</span></summary>
+        <div class="settings-details__inner">
+          <p class="small" data-i18n="endScreenVictoryHelp">Shown when a timed kiosk session ends (sprint / marathon). Use {score} in the message.</p>
+          <label class="block">
+            <span data-i18n="endScreenTitleField">Title</span>
+            <input type="text" id="endScreenVictoryTitleField" placeholder="" />
+          </label>
+          <label class="block">
+            <span data-i18n="endScreenMessageField">Message</span>
+            <textarea id="endScreenVictoryMessageField" rows="3" placeholder=""></textarea>
+          </label>
+          <label class="block">
+            <span data-i18n="endScreenLinkUrl">Link URL</span>
+            <input type="url" id="endScreenVictoryLinkUrl" placeholder="https://..." />
+          </label>
+          <label class="block">
+            <span data-i18n="endScreenLinkText">Link label</span>
+            <input type="text" id="endScreenVictoryLinkText" placeholder="" />
+          </label>
+          <label class="block">
+            <span data-i18n="endScreenQrUrl">QR code URL</span>
+            <input type="url" id="endScreenVictoryQrUrl" placeholder="https://..." />
+          </label>
+          <p class="small" data-i18n="endScreenQrHelp">QR is generated from this link and shown on the final screen.</p>
+          <label class="block">
+            <span data-i18n="endScreenImage">Image file</span>
+            <input type="file" id="endScreenVictoryImageFile" accept="image/*" />
+          </label>
+          <div class="row-btns">
+            <button type="button" id="btnClearEndScreenVictoryImage" data-i18n="clearEndScreenImage">Remove image</button>
           </div>
         </div>
       </details>
@@ -253,6 +375,8 @@
       <details class="settings-details">
         <summary class="settings-details__summary"><span data-i18n="storageTitle">Config</span></summary>
         <div class="settings-details__inner">
+          <p class="small ministry-cookies" data-i18n="ministryCookiesNotice"></p>
+          <p class="small ministry-cookies ministry-cookies--flavor" data-i18n="ministryCookiesFlavor"></p>
           <div class="row-btns">
             <button type="button" id="btnSaveLocal" data-i18n="saveLocal">Save locally</button>
             <button type="button" id="btnExportB64" data-i18n="exportB64">Copy Base64</button>
@@ -325,6 +449,8 @@
     <footer class="footer">
       <p class="small footer__legal" data-i18n="footerLegal"></p>
       <p class="small" data-i18n="footerNote"></p>
+      <p class="small footer__cookies" data-i18n="footerCookies"></p>
+      <p class="small footer__wikiquote" data-i18n="footerWikiquote"></p>
     </footer>
   </div>
 
@@ -334,6 +460,10 @@
   <script src="i18n.js"></script>
   <script src="assets-meta.js"></script>
   <script src="stratagems-data.js"></script>
+  <script src="helldivers-loading-lines.js"></script>
+  <script src="assets/vendor/howler.min.js"></script>
+  <script src="classic-game.js"></script>
+  <script src="assets/vendor/qrcode.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

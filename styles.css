@@ -198,12 +198,36 @@ body {
   border-bottom: 1px solid var(--border);
 }
 
-.top-bar h1 {
-  margin: 0;
-  font-size: 1.35rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--accent);
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.top-bar__brand {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.top-bar__logo {
+  max-height: 52px;
+  width: auto;
+  max-width: min(320px, 58vw);
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+
+.kiosk-mode .top-bar__logo {
+  max-height: 40px;
+  max-width: min(280px, 70vw);
 }
 
 .top-actions {
@@ -211,6 +235,79 @@ body {
   flex-wrap: wrap;
   gap: 0.5rem;
   align-items: center;
+}
+
+.btn-sfx-mute {
+  min-width: 5.5rem;
+  font-size: 0.8rem;
+}
+
+.settings-saved-toast {
+  position: fixed;
+  top: 4.25rem;
+  right: 1rem;
+  z-index: 300;
+  max-width: min(90vw, 18rem);
+  padding: 0.45rem 0.85rem;
+  background: var(--ok);
+  color: #0d120c;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
+}
+
+.settings-saved-toast.settings-saved-toast--show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.settings-saved-toast[hidden] {
+  display: none !important;
+}
+
+/* Rotating Helldivers-style lines: under classic timer (#helldiversLoadingTicker) */
+.classic-game__phrase-ticker {
+  margin: 0.7rem 0 0;
+  padding: 0.5rem 0.4rem;
+  font-size: clamp(1.05rem, 3.4vw, 1.35rem);
+  line-height: 1.45;
+  font-style: italic;
+  font-weight: 500;
+  color: #f2eee6;
+  text-align: center;
+  min-height: 3rem;
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  border-top: 1px solid rgba(255, 232, 10, 0.22);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+}
+
+.classic-game__phrase-ticker[hidden] {
+  display: none !important;
+}
+
+.ministry-cookies {
+  border-left: 3px solid var(--accent);
+  padding-left: 0.65rem;
+  margin: 0 0 0.65rem;
+}
+
+.ministry-cookies--flavor {
+  border-left-color: var(--brand);
+  font-style: italic;
+}
+
+.footer__cookies,
+.footer__wikiquote {
+  margin: 0.35rem 0 0;
+  opacity: 0.92;
 }
 
 textarea {
@@ -409,11 +506,11 @@ html.automaton-takeover .hud-timer {
   align-items: center;
 }
 
-/* Emblem from Helldivers 2 logo (Logopedia); yellow #ffe900 in SVG = life left */
+/* Skull icon: local assets/images/branding/favicon-192.png; “spent” lives greyed via filter */
 .hud-skull__img {
-  width: 48px;
-  height: auto;
-  aspect-ratio: 464.977 / 181.089;
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
   display: block;
 }
 
@@ -503,6 +600,33 @@ html.automaton-takeover .hud-timer {
 
 .game-over-modal__img[hidden] {
   display: none !important;
+}
+
+.game-over-modal__qr-wrap {
+  margin: 0 auto 1rem;
+  text-align: center;
+}
+
+.game-over-modal__qr-wrap[hidden] {
+  display: none !important;
+}
+
+.game-over-modal__qr-caption {
+  margin: 0 0 0.5rem;
+  color: var(--muted);
+}
+
+.game-over-modal__qr-img {
+  display: inline-block;
+  width: 220px;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  border-radius: 6px;
+  border: 2px solid var(--border);
+  background: #fff;
+  padding: 6px;
+  box-sizing: border-box;
 }
 
 .game-over-modal__link-wrap {
@@ -944,4 +1068,279 @@ label.inline {
     flex-direction: column;
     align-items: flex-start;
   }
+}
+
+/* ——— StratagemHero.com–style play shell (classic-game.js) ——— */
+.play-hint-banner {
+  text-align: center;
+  margin: 0.5rem auto 0;
+  max-width: 40rem;
+}
+
+.play-hint-banner[hidden] {
+  display: none !important;
+}
+
+.classic-game {
+  position: relative;
+  max-width: 28rem;
+  margin: 0 auto 1rem;
+  padding: 0.75rem 1rem 1rem;
+  background: #333;
+  border: 2px solid #ffe80a;
+  border-radius: 4px;
+  color: #eee;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+}
+
+.classic-game[hidden] {
+  display: none !important;
+}
+
+.classic-game__banner {
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+.classic-game__logo {
+  max-width: min(100%, 280px);
+  height: auto;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.classic-game__topbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.5rem;
+}
+
+.classic-game__volume {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+}
+
+.classic-game__volume input[type="range"] {
+  width: 7rem;
+  accent-color: #ffe80a;
+}
+
+.classic-game__vol-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+  user-select: none;
+}
+
+.classic-screen {
+  min-height: 12rem;
+  padding: 0.5rem 0;
+  text-align: center;
+}
+
+.classic-screen[hidden] {
+  display: none !important;
+}
+
+.classic-screen__title {
+  font-size: clamp(1rem, 3.5vw, 1.35rem);
+  font-weight: 700;
+  margin: 0.5rem 0;
+  color: #fff;
+}
+
+.classic-screen__eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.75rem;
+  color: #ffe80a;
+  margin: 0 0 0.35rem;
+}
+
+.classic-screen__round {
+  font-size: clamp(1.5rem, 6vw, 2.25rem);
+  font-weight: 800;
+  margin: 0;
+  color: #fff;
+}
+
+.classic-screen__ready {
+  margin: 1rem 0 0;
+  font-size: 0.95rem;
+  color: #ccc;
+  font-style: italic;
+  min-height: 1.5em;
+}
+
+.classic-screen__sub {
+  margin: 0.35rem 0 0;
+  color: #aaa;
+}
+
+.classic-screen--game {
+  text-align: left;
+  min-height: auto;
+}
+
+.classic-game__hud {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #ffe80a;
+  margin-bottom: 0.65rem;
+}
+
+.classic-strat-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+  min-height: 3rem;
+}
+
+.classic-strat-item {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 2px solid #555;
+  border-radius: 4px;
+  overflow: hidden;
+  opacity: 0.45;
+  transition: opacity 0.15s ease, border-color 0.15s ease;
+}
+
+.classic-strat-item--active {
+  opacity: 1;
+  border-color: #ffe80a;
+}
+
+.classic-strat-item__icon {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  background: #222;
+}
+
+.classic-active-name {
+  font-size: clamp(1rem, 3.5vw, 1.2rem);
+  margin: 0 0 0.5rem;
+  text-align: center;
+  color: #fff;
+  font-weight: 700;
+}
+
+.classic-seq-host {
+  min-height: 3rem;
+  margin-bottom: 0.75rem;
+}
+
+.classic-seq-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: center;
+}
+
+.classic-arrow {
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid #666;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #2a2a2a;
+}
+
+.classic-arrow img {
+  width: 70%;
+  height: 70%;
+  object-fit: contain;
+  opacity: 0.45;
+  filter: brightness(1.1);
+}
+
+.classic-arrow--correct img {
+  opacity: 1;
+  filter: none;
+}
+
+.classic-timer {
+  height: 10px;
+  background: #1a1a1a;
+  border-radius: 2px;
+  overflow: hidden;
+  border: 1px solid #555;
+}
+
+.classic-timer__fill {
+  height: 100%;
+  width: 100%;
+  background: #ffe80a;
+  transition: width 0.05s linear;
+}
+
+.classic-timer__fill--warn {
+  background: #ff4444;
+}
+
+.classic-screen--round-over .classic-ro__line {
+  margin: 0.35rem 0;
+  font-size: 1.05rem;
+}
+
+.classic-ro--hidden {
+  visibility: hidden;
+}
+
+.classic-go__score {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #ffe80a;
+  margin: 0.75rem 0;
+}
+
+.classic-game__glitch {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: rgba(255, 255, 255, 0.12);
+  mix-blend-mode: screen;
+  z-index: 5;
+}
+
+.classic-game__glitch--flash {
+  animation: classic-glitch-flash 0.28s ease-out;
+}
+
+@keyframes classic-glitch-flash {
+  0% {
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes classic-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-6px);
+  }
+  75% {
+    transform: translateX(6px);
+  }
+}
+
+.kiosk-mode .classic-game {
+  max-width: min(32rem, 100%);
 }
