@@ -346,6 +346,51 @@
     return isKioskMode() && run && run.active && run.kioskPreset;
   }
 
+  function randomAutomatonStratThreshold() {
+    return 10 + Math.floor(Math.random() * 3);
+  }
+
+  function initRunAutomatonState(runObj) {
+    if (!runObj) return;
+    runObj.automatonStratCount = 0;
+    runObj.automatonNextAt = randomAutomatonStratThreshold();
+    runObj.automatonUntil = null;
+  }
+
+  function isAutomatonTakeoverActive() {
+    return !!(run && run.active && run.automatonUntil && Date.now() < run.automatonUntil);
+  }
+
+  function syncAutomatonTakeoverUi() {
+    const on = isAutomatonTakeoverActive();
+    document.documentElement.classList.toggle("automaton-takeover", on);
+    const cw = el("cyberstanWatermark");
+    if (cw) cw.hidden = !on;
+  }
+
+  function maybeEndAutomatonTakeover() {
+    if (!run || !run.active || !run.automatonUntil || Date.now() < run.automatonUntil) return;
+    run.automatonUntil = null;
+    syncAutomatonTakeoverUi();
+    applyPlayfieldForStratagem(run.current && run.current.strat ? run.current.strat : null);
+  }
+
+  function tryAutomatonTakeoverAfterSuccess() {
+    if (!run || !run.active || isAutomatonTakeoverActive()) return;
+    if (run.automatonNextAt == null) run.automatonNextAt = randomAutomatonStratThreshold();
+    run.automatonStratCount = (run.automatonStratCount || 0) + 1;
+    if (run.automatonStratCount < run.automatonNextAt) return;
+    run.automatonStratCount = 0;
+    run.automatonNextAt = randomAutomatonStratThreshold();
+    run.automatonUntil = Date.now() + 20000 + Math.random() * 20000;
+    syncAutomatonTakeoverUi();
+  }
+
+  function clearAutomatonTakeoverForRunEnd() {
+    if (run) run.automatonUntil = null;
+    syncAutomatonTakeoverUi();
+  }
+
   function formatSessionLeft(ms) {
     const x = Math.max(0, ms);
     if (x >= 60000) {
@@ -393,6 +438,7 @@
     tickHandle = null;
     const score = run ? run.score : 0;
     if (run) run.active = false;
+    clearAutomatonTakeoverForRunEnd();
     touchStart = null;
     setPlayfieldTouchMode(false);
     el("stratAudio").pause();
@@ -423,6 +469,7 @@
     tickHandle = null;
     const score = run ? run.score : 0;
     if (run) run.active = false;
+    clearAutomatonTakeoverForRunEnd();
     touchStart = null;
     setPlayfieldTouchMode(false);
     el("stratAudio").pause();
@@ -483,6 +530,7 @@
     }
     run = runBase;
     run.pressureProgress = 100;
+    initRunAutomatonState(run);
     el("hudScore").textContent = "0";
     el("hudCombo").textContent = "×0";
     el("hudLevel").textContent = `${t("level")} 1`;
@@ -583,6 +631,20 @@
   function applyPlayfieldForStratagem(strat) {
     const pf = document.querySelector(".playfield");
     if (!pf) return;
+    if (isAutomatonTakeoverActive()) {
+      pf.style.backgroundColor = "#0c0608";
+      pf.style.backgroundImage = [
+        "radial-gradient(ellipse 120% 85% at 50% 18%, rgba(130, 28, 22, 0.55) 0%, transparent 52%)",
+        "radial-gradient(ellipse 85% 65% at 85% 95%, rgba(35, 48, 68, 0.5) 0%, transparent 48%)",
+        "linear-gradient(168deg, rgba(28, 14, 16, 0.98) 0%, rgba(6, 4, 8, 0.99) 55%, rgba(10, 8, 14, 1) 100%)",
+        "repeating-linear-gradient(90deg, transparent, transparent 4px, rgba(255, 45, 35, 0.045) 4px, rgba(255, 45, 35, 0.045) 8px)",
+        "repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(200, 210, 220, 0.025) 40px, rgba(200, 210, 220, 0.025) 41px)",
+      ].join(", ");
+      pf.style.backgroundSize = "cover, cover, cover, auto, auto";
+      pf.style.backgroundPosition = "center, center, center, center, center";
+      pf.style.backgroundRepeat = "no-repeat, no-repeat, no-repeat, repeat, repeat";
+      return;
+    }
     if (strat && strat.playfieldBackground && strat.playfieldBackground.trim()) {
       pf.style.background = strat.playfieldBackground;
       pf.style.backgroundSize = "";
@@ -840,6 +902,7 @@
 
   function endRun(msg) {
     if (run) run.active = false;
+    clearAutomatonTakeoverForRunEnd();
     touchStart = null;
     setPlayfieldTouchMode(false);
     el("playHint").textContent = msg || t("runOver");
@@ -898,6 +961,7 @@
     if (tickHandle) clearInterval(tickHandle);
     tickHandle = null;
     if (run) run.active = false;
+    clearAutomatonTakeoverForRunEnd();
     touchStart = null;
     setPlayfieldTouchMode(false);
     el("stratAudio").pause();
@@ -959,6 +1023,7 @@
     el("hudScore").textContent = String(run.score);
     el("hudCombo").textContent = `×${run.combo}`;
     el("hudLevel").textContent = `${t("level")} ${run.level}`;
+    tryAutomatonTakeoverAfterSuccess();
     updateTimerHud();
     updateSessionHud();
     startNewChallenge();
@@ -1128,6 +1193,7 @@
   let tickHandle = null;
   function tick() {
     updateSessionHud();
+    if (run && run.active) maybeEndAutomatonTakeover();
     if (!run || !run.active) {
       updateTimerHud();
       return;
@@ -1189,6 +1255,7 @@
       sessionDeadline: null,
       sessionTotalMs: null,
     };
+    initRunAutomatonState(run);
     el("hudScore").textContent = "0";
     el("hudCombo").textContent = "×0";
     el("hudLevel").textContent = `${t("level")} 1`;
