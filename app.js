@@ -3,8 +3,13 @@
   const STORAGE_KEY = "stratagem-hero-config-v5";
   const LEGACY_STORAGE_KEYS = ["stratagem-hero-config-v4", "stratagem-hero-config-v3"];
   const DEFAULT_LEVELS = 10;
-  const CHEVRON_D = "M24 4 L44 46 H32 L24 26 L16 46 H4 Z";
-  const CHEVRON_ROT = { up: 0, right: 90, down: 180, left: 270 };
+  /** Local Helldivers-style direction arrows (see assets/THIRD_PARTY.txt). */
+  const ARROW_IMG = {
+    up: "assets/images/arrows/arrow-up.svg",
+    down: "assets/images/arrows/arrow-down.svg",
+    left: "assets/images/arrows/arrow-left.svg",
+    right: "assets/images/arrows/arrow-right.svg",
+  };
 
   /** Progressive defaults: shorter time, higher rewards and harsher penalties on later levels. */
   function generatedLevelRow(i) {
@@ -506,17 +511,14 @@
     const wrap = document.createElement("span");
     wrap.className = `hd-arrow-chip ${cls || ""}`.trim();
     wrap.dataset.dir = dir;
-    const deg = CHEVRON_ROT[dir] ?? 0;
-    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg.setAttribute("class", "hd-chevron-svg");
-    svg.setAttribute("viewBox", "0 0 48 52");
-    svg.setAttribute("aria-hidden", "true");
-    svg.style.transform = `rotate(${deg}deg)`;
-    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    path.setAttribute("d", CHEVRON_D);
-    path.setAttribute("class", "hd-chevron-path");
-    svg.appendChild(path);
-    wrap.appendChild(svg);
+    const img = document.createElement("img");
+    img.className = "hd-chevron-svg";
+    img.src = ARROW_IMG[dir] || ARROW_IMG.up;
+    img.alt = "";
+    img.setAttribute("aria-hidden", "true");
+    img.decoding = "async";
+    img.loading = "eager";
+    wrap.appendChild(img);
     return wrap;
   }
 

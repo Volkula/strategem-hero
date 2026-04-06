@@ -510,23 +510,16 @@ button:active {
   width: 34px;
   height: 38px;
   display: block;
+  object-fit: contain;
   filter: drop-shadow(0 0 5px rgba(232, 196, 92, 0.45));
-}
-
-.hd-arrow-chip .hd-chevron-path {
-  fill: #e8c45c;
-  stroke: #2a2414;
-  stroke-width: 1.25;
-  stroke-linejoin: miter;
 }
 
 .hd-arrow-chip.done {
   border-color: rgba(123, 201, 111, 0.85);
 }
 
-.hd-arrow-chip.done .hd-chevron-path {
-  fill: #9fdf8a;
-  stroke: #1a3018;
+.hd-arrow-chip.done .hd-chevron-svg {
+  filter: drop-shadow(0 0 6px rgba(123, 201, 111, 0.65));
 }
 
 .hd-arrow-chip.wrong {
@@ -534,9 +527,8 @@ button:active {
   animation: shake 0.35s ease;
 }
 
-.hd-arrow-chip.wrong .hd-chevron-path {
-  fill: #ff6b6b;
-  stroke: #301010;
+.hd-arrow-chip.wrong .hd-chevron-svg {
+  filter: drop-shadow(0 0 7px rgba(255, 107, 107, 0.75));
 }
 
 @keyframes shake {

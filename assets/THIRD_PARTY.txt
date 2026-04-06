@@ -5,3 +5,10 @@ super_earth.svg is from the same repository.
 Patch-themed playfield JPEGs in assets/backgrounds/patch-*.jpg are original
 rasters for this project (not official Helldivers 2 / warbond marketing art).
 Replace these files locally if you want different imagery.
+
+Direction arrow SVGs in assets/images/arrows/ were sourced from Namu Wiki
+(i.namu.wiki); rights remain with the respective owners. Original URLs:
+  arrow-down:  https://i.namu.wiki/i/cWwN40LD7vyB5UScQbpSyiaDrXRvjoNPA6A2aRTHSgj79UrvZfHmUoEGDe6D39qV-WYHD14kyN6h6SWYGdI15Sssh4amNrdeFdv23RXx1bg5mgsc81espI2GoxEP61tphuc28ENqNZc5hI4K8wtDBQ.svg
+  arrow-up:    https://i.namu.wiki/i/OGNR5vk45ffMaCT0FkyA1M5nrn29SRNHJ7hR8geV5RRwRnETCNN-L1Za8fPjmrlSG28pjxi1icL5gu_mc03eOQUPJVTyz2SRGN2aPbV32flhxnt_fc-NITo7yjOKs5sLbqjx17CUS5nZmU6Herp57g.svg
+  arrow-left:  https://i.namu.wiki/i/LK__8D4ObU1qKgbO0SFl9gtdf3Widy3IBYXD4As8UqefyXVi-UHqAt0Yppam1AfsFnjrhKALnEkmY6T6EJmhU7pxg9mf2UeRDQiXtOlMoEtxJOTWp4i83Fxh3ooeBO3nnTa9PCnpG2Xm9KQpnJpP1w.svg
+  arrow-right: https://i.namu.wiki/i/AW2JjDk7AfLjyDCAFuyRsRUE6pL77irigQogvPk0WFLgBkBkoPowQz2Ib-mcK5Ae2KJyGwO3rU9Aig9IKa1S-7_Ofm681HkQY-nIgAXjOXQCvLXrJ-zQG14E6W8WBlBxoOyQRnOGlB6JtQfBDTPVaA.svg
