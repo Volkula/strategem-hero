@@ -91,6 +91,8 @@
       category_backpacks: "Backpacks",
       category_vehicles: "Vehicles",
       category_mission: "Mission / general",
+      footerLegal:
+        "Helldivers® 2 and related trademarks, logos, names, and other materials are the property of Arrowhead Game Studios AB and Sony Interactive Entertainment. This site is a non-commercial fan work, not affiliated with, endorsed by, or sponsored by Arrowhead or Sony. The authors disclaim all liability for any use of third-party intellectual property; you use this project entirely at your own risk.",
       footerNote:
         "Fan trainer: wiki names, community codes. Permit-style SVG icons are vendored from drizzer14/stratagem-hero (MIT). Adjust in editor if a patch changes codes.",
       noCodeWarning: "No code in database — add one in the Editor.",
@@ -208,6 +210,8 @@
       category_backpacks: "Backpacks",
       category_vehicles: "Vehicles",
       category_mission: "Mission stratagems",
+      footerLegal:
+        "Helldivers® 2, связанные товарные знаки, логотипы, названия и иные материалы принадлежат Arrowhead Game Studios AB и Sony Interactive Entertainment. Этот сайт — некоммерческое фанатское произведение, не связанное с Arrowhead или Sony, не одобренное и не спонсируемое ими. Авторы не несут ответственности за любое использование чужой интеллектуальной собственности; вы пользуетесь проектом на свой страх и риск.",
       footerNote:
         "Fan trainer: stratagem names from helldivers.wiki.gg (English). SVG icons from drizzer14/stratagem-hero (MIT). Verify codes after patches.",
       noCodeWarning: "No stratagem code in database — add one in the Editor.",

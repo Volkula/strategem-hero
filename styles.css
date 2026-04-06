@@ -733,6 +733,13 @@ label.inline {
   border-top: 1px solid var(--border);
 }
 
+.footer__legal {
+  color: var(--muted);
+  line-height: 1.45;
+  margin-bottom: 0.65rem;
+  max-width: 52rem;
+}
+
 @media (max-width: 600px) {
   .top-bar {
     flex-direction: column;
