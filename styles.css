@@ -333,61 +333,31 @@ button:active {
   gap: 0.4rem 0.5rem;
 }
 
-.hud-skulls-row--many .hud-skull__svg {
-  width: 22px;
-  height: 25px;
+.hud-skulls-row--many .hud-skull__img {
+  width: 36px;
 }
 
 .hud-skull {
   display: inline-flex;
   flex-shrink: 0;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
+  align-items: center;
 }
 
-.hud-skull__svg {
-  width: 30px;
-  height: 34px;
+/* Emblem from Helldivers 2 logo (Logopedia); yellow #ffe900 in SVG = life left */
+.hud-skull__img {
+  width: 48px;
+  height: auto;
+  aspect-ratio: 464.977 / 181.089;
   display: block;
 }
 
-.hud-skull--left .hud-skull__cranium {
-  fill: #f4efe4;
-  stroke: #c4b896;
-  stroke-width: 0.6;
+.hud-skull--left .hud-skull__img {
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
 }
 
-.hud-skull--left .hud-skull__eye {
-  fill: #0c0b09;
-}
-
-.hud-skull--left .hud-skull__nose {
-  fill: #0c0b09;
-}
-
-.hud-skull--left .hud-skull__teeth {
-  fill: #d8d2c4;
-  stroke: #8a8268;
-  stroke-width: 0.35;
-}
-
-.hud-skull--spent .hud-skull__cranium {
-  fill: #5a5753;
-  stroke: #3a3835;
-  stroke-width: 0.55;
-}
-
-.hud-skull--spent .hud-skull__eye {
-  fill: #1a1917;
-}
-
-.hud-skull--spent .hud-skull__nose {
-  fill: #1a1917;
-}
-
-.hud-skull--spent .hud-skull__teeth {
-  fill: #4a4845;
-  stroke: #2a2826;
-  stroke-width: 0.35;
+.hud-skull--spent .hud-skull__img {
+  filter: grayscale(100%) brightness(0.62) contrast(0.92) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+  opacity: 0.9;
 }
 
 .timer-bar {

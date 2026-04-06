@@ -9,6 +9,11 @@ Patch-themed playfield JPEGs in assets/backgrounds/patch-*.jpg are original
 rasters for this project (not official Helldivers 2 / warbond marketing art).
 Replace these files locally if you want different imagery.
 
+HUD “skull” icons use the Helldivers 2 emblem path from the Logopedia wiki
+(CC-BY-SA): https://logos.fandom.com/wiki/Helldivers_2
+File: assets/images/hud-skull-hd2-emblem.svg (yellow #ffe900 in file; “spent”
+lives are greyed via CSS).
+
 Direction arrow SVGs in assets/images/arrows/ were sourced from Namu Wiki
 (i.namu.wiki); rights remain with the respective owners. Original URLs:
   arrow-down:  https://i.namu.wiki/i/cWwN40LD7vyB5UScQbpSyiaDrXRvjoNPA6A2aRTHSgj79UrvZfHmUoEGDe6D39qV-WYHD14kyN6h6SWYGdI15Sssh4amNrdeFdv23RXx1bg5mgsc81espI2GoxEP61tphuc28ENqNZc5hI4K8wtDBQ.svg

@@ -71,7 +71,7 @@
       includeIncomplete: false,
       stratagemOverrides: {},
       gameRules: {
-        maxErrors: 0,
+        maxErrors: 3,
         countTimeoutAsError: true,
         countWrongAsError: true,
       },
@@ -317,6 +317,7 @@
       }
     }
     updateKioskArcadeSplash();
+    if (on) autoMarathonIfKiosk();
   }
 
   function updateKioskArcadeSplash() {
@@ -325,6 +326,20 @@
     if (pf) pf.classList.toggle("playfield--arcade", isKioskMode());
     if (!splash) return;
     splash.hidden = !(isKioskMode() && (!run || !run.active));
+  }
+
+  /** Kiosk: start 5‑min marathon automatically; any stratagem key also starts if idle. */
+  function autoMarathonIfKiosk() {
+    if (!isKioskMode()) return;
+    const panelPlay = el("panelPlay");
+    if (!panelPlay || !panelPlay.classList.contains("active")) return;
+    if (run && run.active) return;
+    if (bindTarget) return;
+    const modal = el("gameOverModal");
+    if (modal && !modal.hidden) return;
+    const list = getStratagemList(cfg);
+    if (!eligiblePool(cfg, list).length) return;
+    startKioskRun("marathon5");
   }
 
   function usesKioskPressureTimer() {
@@ -692,43 +707,12 @@
     const wrap = document.createElement("span");
     wrap.className = spent ? "hud-skull hud-skull--spent" : "hud-skull hud-skull--left";
     wrap.setAttribute("aria-hidden", "true");
-    const ns = "http://www.w3.org/2000/svg";
-    const svg = document.createElementNS(ns, "svg");
-    svg.setAttribute("class", "hud-skull__svg");
-    svg.setAttribute("viewBox", "0 0 32 36");
-    const g = document.createElementNS(ns, "g");
-    g.setAttribute("class", "hud-skull__g");
-    const cranium = document.createElementNS(ns, "path");
-    cranium.setAttribute("class", "hud-skull__cranium");
-    cranium.setAttribute(
-      "d",
-      "M16 2.5c-5.2 0-9.2 3.4-10.8 8.2-.8 2.3-.6 4.8.4 7l1.2 2.6-1 4.2h21l-1-4.2 1.2-2.6c1-2.2 1.2-4.7.4-7C25.2 5.9 21.2 2.5 16 2.5z"
-    );
-    const eyeL = document.createElementNS(ns, "ellipse");
-    eyeL.setAttribute("class", "hud-skull__eye");
-    eyeL.setAttribute("cx", "10.5");
-    eyeL.setAttribute("cy", "14");
-    eyeL.setAttribute("rx", "2.4");
-    eyeL.setAttribute("ry", "3");
-    const eyeR = document.createElementNS(ns, "ellipse");
-    eyeR.setAttribute("class", "hud-skull__eye");
-    eyeR.setAttribute("cx", "21.5");
-    eyeR.setAttribute("cy", "14");
-    eyeR.setAttribute("rx", "2.4");
-    eyeR.setAttribute("ry", "3");
-    const nose = document.createElementNS(ns, "path");
-    nose.setAttribute("class", "hud-skull__nose");
-    nose.setAttribute("d", "M16 17.5l-1.8 4.2h3.6z");
-    const teeth = document.createElementNS(ns, "path");
-    teeth.setAttribute("class", "hud-skull__teeth");
-    teeth.setAttribute("d", "M9 24.5h14v1.8H9zm0 2.4h14v1.6H9z");
-    g.appendChild(cranium);
-    g.appendChild(eyeL);
-    g.appendChild(eyeR);
-    g.appendChild(nose);
-    g.appendChild(teeth);
-    svg.appendChild(g);
-    wrap.appendChild(svg);
+    const img = document.createElement("img");
+    img.className = "hud-skull__img";
+    img.src = "assets/images/hud-skull-hd2-emblem.svg";
+    img.alt = "";
+    img.decoding = "async";
+    wrap.appendChild(img);
     return wrap;
   }
 
@@ -928,7 +912,7 @@
   }
 
   function registerFailError(reason) {
-    if (!run || run.noPenalties || run.kioskPreset) return false;
+    if (!run || run.noPenalties) return false;
     const gr = gameRules();
     const maxE = Math.max(0, Number(gr.maxErrors) || 0);
     if (maxE <= 0) return false;
@@ -1103,6 +1087,25 @@
       renderBindings();
       saveConfig(cfg);
       return;
+    }
+
+    if (isKioskMode() && (!run || !run.active)) {
+      const modal = el("gameOverModal");
+      if (!modal || modal.hidden) {
+        let pressed = null;
+        for (const d of ["up", "down", "left", "right"]) {
+          if (cfg.bindings[d].includes(e.code)) {
+            pressed = d;
+            break;
+          }
+        }
+        if (pressed) {
+          e.preventDefault();
+          startKioskRun("marathon5");
+          processDirectionInput(pressed);
+          return;
+        }
+      }
     }
 
     if (!run || !run.active || !run.current) return;
@@ -1439,9 +1442,14 @@
 
     el("gameOverClose").addEventListener("click", () => {
       hideGameOverModal();
+      autoMarathonIfKiosk();
     });
     const goBd = el("gameOverBackdrop");
-    if (goBd) goBd.addEventListener("click", () => hideGameOverModal());
+    if (goBd)
+      goBd.addEventListener("click", () => {
+        hideGameOverModal();
+        autoMarathonIfKiosk();
+      });
 
     el("maxErrors").addEventListener("change", () => {
       cfg.gameRules = cfg.gameRules || { ...defaultConfig().gameRules };
