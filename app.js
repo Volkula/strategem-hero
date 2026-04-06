@@ -228,8 +228,158 @@
   let bindTarget = null;
   let editorSeq = [];
   let touchStart = null;
+  /** Last festival / kiosk mode used for «Start over». */
+  let lastKioskPreset = "easy";
 
   const el = (id) => document.getElementById(id);
+
+  function isKioskMode() {
+    try {
+      const p = new URLSearchParams(window.location.search);
+      return p.has("kiosk") || p.get("kiosk") === "1" || p.get("kiosk") === "true";
+    } catch {
+      return false;
+    }
+  }
+
+  function applyKioskLayout() {
+    if (!isKioskMode()) return;
+    document.documentElement.classList.add("kiosk-mode");
+    document.body.classList.add("kiosk-mode");
+    const km = el("kioskMenu");
+    const pd = el("playControlsDefault");
+    if (km) km.hidden = false;
+    if (pd) pd.style.display = "none";
+    ["btnSettings", "btnEditor", "btnPlay"].forEach((id) => {
+      const n = el(id);
+      if (n) n.style.display = "none";
+    });
+  }
+
+  function formatSessionLeft(ms) {
+    const x = Math.max(0, ms);
+    if (x >= 60000) {
+      const s = Math.ceil(x / 1000);
+      const m = Math.floor(s / 60);
+      const r = s % 60;
+      return `${m}:${String(r).padStart(2, "0")}`;
+    }
+    return `${Math.ceil(x / 1000)}s`;
+  }
+
+  function updateSessionHud() {
+    const node = el("hudSession");
+    if (!node) return;
+    if (!run || !run.active || run.sessionDeadline == null) {
+      node.textContent = "";
+      node.hidden = true;
+      return;
+    }
+    node.hidden = false;
+    node.textContent = `${t("kioskSession")} ${formatSessionLeft(run.sessionDeadline - Date.now())}`;
+  }
+
+  function showKioskResultModal(title, message) {
+    const modal = el("gameOverModal");
+    if (!modal) return;
+    const img = el("gameOverImage");
+    const link = el("gameOverLink");
+    el("gameOverTitleText").textContent = title;
+    el("gameOverMessageText").textContent = message;
+    if (img) {
+      img.hidden = true;
+      img.removeAttribute("src");
+    }
+    if (link) {
+      link.hidden = true;
+      link.removeAttribute("href");
+      link.textContent = "";
+    }
+    modal.hidden = false;
+  }
+
+  function kioskEndReason(kind) {
+    if (tickHandle) clearInterval(tickHandle);
+    tickHandle = null;
+    const score = run ? run.score : 0;
+    if (run) run.active = false;
+    touchStart = null;
+    setPlayfieldTouchMode(false);
+    el("stratAudio").pause();
+    updateTimerHud();
+    updateSessionHud();
+    updateErrorsHud();
+    setStratagemIcon(null);
+    applyGlobalBackgrounds();
+    el("playHint").textContent = t("kioskPickMode");
+    let title;
+    let msg;
+    if (kind === "lottery") {
+      title = t("kioskLotteryEndTitle");
+      msg = t("kioskLotteryEndMsg").replace("{score}", String(score));
+    } else if (kind === "marathon") {
+      title = t("kioskMarathonEndTitle");
+      msg = t("kioskTimedEndMsg").replace("{score}", String(score));
+    } else {
+      title = t("kioskSprintEndTitle");
+      msg = t("kioskTimedEndMsg").replace("{score}", String(score));
+    }
+    showKioskResultModal(title, msg);
+  }
+
+  function kioskPresetHint(preset) {
+    const map = {
+      easy: "kioskHintEasy",
+      sprint30: "kioskHintSprint",
+      lottery: "kioskHintLottery",
+      marathon5: "kioskHintMarathon",
+    };
+    const k = map[preset];
+    return k ? t(k) : "";
+  }
+
+  function startKioskRun(preset) {
+    const list = getStratagemList(cfg);
+    const pool = eligiblePool(cfg, list);
+    if (!pool.length) {
+      el("playHint").textContent = t("noCodeWarning");
+      setPlayfieldTouchMode(false);
+      return;
+    }
+    lastKioskPreset = preset;
+    hideGameOverModal();
+    const runBase = {
+      active: true,
+      score: 0,
+      combo: 0,
+      level: 1,
+      current: null,
+      errors: 0,
+      penaltyDebtMs: 0,
+      kioskPreset: preset,
+      noPenalties: preset === "easy",
+      lotteryOneShot: preset === "lottery",
+      sessionDeadline: null,
+      sessionTotalMs: null,
+    };
+    if (preset === "sprint30") {
+      runBase.sessionDeadline = Date.now() + 30000;
+      runBase.sessionTotalMs = 30000;
+    } else if (preset === "marathon5") {
+      runBase.sessionDeadline = Date.now() + 300000;
+      runBase.sessionTotalMs = 300000;
+    }
+    run = runBase;
+    el("hudScore").textContent = "0";
+    el("hudCombo").textContent = "×0";
+    el("hudLevel").textContent = `${t("level")} 1`;
+    el("playHint").textContent = kioskPresetHint(preset);
+    updateErrorsHud();
+    updateSessionHud();
+    if (tickHandle) clearInterval(tickHandle);
+    tickHandle = setInterval(tick, 120);
+    startNewChallenge();
+  }
 
   function t(key) {
     return SH2_I18N.t(cfg.locale, key);
@@ -485,6 +635,7 @@
       renderArrowPreview({ code: [] }, 0, false);
       updatePlayfieldTouchCapture();
       updateTimerHud();
+      updateSessionHud();
       return;
     }
     const baseTime = timeForStratagem(strat);
@@ -511,9 +662,12 @@
       sa.play().catch(() => {});
     }
     renderArrowPreview(strat, 0, false);
-    el("playHint").textContent = strat.unverified && !cfg.stratagemOverrides[strat.id]?.verified ? `⚠ ${t("unverified")}` : "";
+    let hint = strat.unverified && !cfg.stratagemOverrides[strat.id]?.verified ? `⚠ ${t("unverified")}` : "";
+    if (!hint && run.kioskPreset) hint = kioskPresetHint(run.kioskPreset);
+    el("playHint").textContent = hint;
     updatePlayfieldTouchCapture();
     updateTimerHud();
+    updateSessionHud();
   }
 
   function endRun(msg) {
@@ -523,6 +677,7 @@
     el("playHint").textContent = msg || t("runOver");
     el("stratAudio").pause();
     updateTimerHud();
+    updateSessionHud();
     updateErrorsHud();
   }
 
@@ -578,6 +733,7 @@
     el("stratAudio").pause();
     el("playHint").textContent = t("defeatMaxErrors");
     updateTimerHud();
+    updateSessionHud();
     updateErrorsHud();
     showGameOverModal();
     setStratagemIcon(null);
@@ -585,9 +741,10 @@
   }
 
   function registerFailError(reason) {
+    if (!run || run.noPenalties || run.kioskPreset) return false;
     const gr = gameRules();
     const maxE = Math.max(0, Number(gr.maxErrors) || 0);
-    if (maxE <= 0 || !run) return false;
+    if (maxE <= 0) return false;
     let count = false;
     if (reason === "timeout" && gr.countTimeoutAsError !== false) count = true;
     if (reason === "wrong" && gr.countWrongAsError !== false) count = true;
@@ -602,7 +759,7 @@
   }
 
   function applyFailPenalties(reason) {
-    if (!run) return;
+    if (!run || run.noPenalties) return;
     const spec = currentLevelSpec();
     const pts = Math.max(0, Number(spec.failPenaltyPoints) || 0);
     if (pts > 0) {
@@ -629,11 +786,17 @@
     el("hudCombo").textContent = `×${run.combo}`;
     el("hudLevel").textContent = `${t("level")} ${run.level}`;
     updateTimerHud();
+    updateSessionHud();
     startNewChallenge();
   }
 
   function onFail(reason) {
     if (!run || !run.active) return;
+    if (run.lotteryOneShot) {
+      if (!run.noPenalties) applyFailPenalties(reason);
+      kioskEndReason("lottery");
+      return;
+    }
     applyFailPenalties(reason);
     if (registerFailError(reason)) return;
     run.combo = 0;
@@ -769,7 +932,16 @@
 
   let tickHandle = null;
   function tick() {
-    if (!run || !run.active || !run.current) {
+    updateSessionHud();
+    if (!run || !run.active) {
+      updateTimerHud();
+      return;
+    }
+    if (run.sessionDeadline != null && Date.now() >= run.sessionDeadline) {
+      kioskEndReason(run.kioskPreset === "marathon5" ? "marathon" : "sprint");
+      return;
+    }
+    if (!run.current) {
       updateTimerHud();
       return;
     }
@@ -792,11 +964,25 @@
       return;
     }
     hideGameOverModal();
-    run = { active: true, score: 0, combo: 0, level: 1, current: null, errors: 0, penaltyDebtMs: 0 };
+    run = {
+      active: true,
+      score: 0,
+      combo: 0,
+      level: 1,
+      current: null,
+      errors: 0,
+      penaltyDebtMs: 0,
+      kioskPreset: null,
+      noPenalties: false,
+      lotteryOneShot: false,
+      sessionDeadline: null,
+      sessionTotalMs: null,
+    };
     el("hudScore").textContent = "0";
     el("hudCombo").textContent = "×0";
     el("hudLevel").textContent = `${t("level")} 1`;
     updateErrorsHud();
+    updateSessionHud();
     if (tickHandle) clearInterval(tickHandle);
     tickHandle = setInterval(tick, 120);
     startNewChallenge();
@@ -809,6 +995,7 @@
     endRun();
     setStratagemIcon(null);
     applyGlobalBackgrounds();
+    updateSessionHud();
   }
 
   function renderBindings() {
@@ -1321,10 +1508,19 @@
     el("editorApply").addEventListener("click", applyEditorOverride);
     el("editorReset").addEventListener("click", resetEditorOverride);
 
+    if (isKioskMode()) {
+      el("kioskBtnRestart").addEventListener("click", () => startKioskRun(lastKioskPreset));
+      el("kioskBtnEasy").addEventListener("click", () => startKioskRun("easy"));
+      el("kioskBtnSprint").addEventListener("click", () => startKioskRun("sprint30"));
+      el("kioskBtnLottery").addEventListener("click", () => startKioskRun("lottery"));
+      el("kioskBtnMarathon").addEventListener("click", () => startKioskRun("marathon5"));
+    }
+
     window.addEventListener("keydown", handleKeyDown);
   }
 
   function init() {
+    applyKioskLayout();
     wireUi();
     hideGameOverModal();
     applyI18nDom();

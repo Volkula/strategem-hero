@@ -10,6 +10,10 @@ Browser trainer for **Helldivers 2** stratagem codes (keyboard, swipes, local as
 2. **Build and deployment** ? Source: **GitHub Actions**
 3. Push to `main` — workflow **Deploy GitHub Pages** publishes the site
 
+## Festival / kiosk UI
+
+Open with query **`?kiosk=1`** (e.g. `index.html?kiosk=1`). Settings and editor are hidden; use the on-screen mode buttons (easy, 30s sprint, one-mistake lottery, 5 min marathon). Language switch stays in the header.
+
 ## Run locally
 
 Open `index.html` in a browser or serve the folder with any static server.

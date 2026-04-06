@@ -23,10 +23,63 @@ body {
   min-height: 100vh;
 }
 
-#app {
+#app,
+.app-root {
   max-width: 960px;
   margin: 0 auto;
   padding: 1rem 1.25rem 3rem;
+}
+
+.kiosk-mode .app-root,
+.kiosk-mode #app {
+  max-width: 100%;
+  padding: 0.65rem 0.85rem 1.5rem;
+}
+
+.kiosk-mode .top-bar {
+  justify-content: center;
+  margin-bottom: 0.65rem;
+  padding-bottom: 0.65rem;
+}
+
+.kiosk-mode .playfield {
+  min-height: 380px;
+}
+
+.kiosk-menu {
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid rgba(92, 77, 46, 0.65);
+}
+
+.kiosk-menu__label {
+  margin: 0 0 0.55rem;
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.kiosk-menu__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  gap: 0.55rem;
+}
+
+.kiosk-menu__btn {
+  min-height: 3.1rem;
+  font-size: clamp(0.85rem, 2.8vw, 1rem);
+  font-weight: 600;
+  padding: 0.5rem 0.6rem;
+  line-height: 1.2;
+  border-color: #6b5a36;
+  color: var(--text);
+  background: linear-gradient(180deg, rgba(40, 34, 26, 0.95) 0%, rgba(18, 16, 12, 0.98) 100%);
+}
+
+.kiosk-menu__btn:hover {
+  border-color: var(--accent);
+  color: var(--brand);
 }
 
 .top-bar {
@@ -159,6 +212,11 @@ button:active {
 
 .hud-errors {
   color: var(--bad);
+}
+
+.hud-session {
+  color: #c9b87a;
+  min-width: 5.5rem;
 }
 
 .timer-bar {

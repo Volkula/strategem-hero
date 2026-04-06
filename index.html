@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div id="app">
+  <div id="app" class="app-root">
     <header class="top-bar">
       <h1 data-i18n="appTitle">Stratagem Hero</h1>
       <div class="top-actions">
@@ -28,6 +28,7 @@
           <span id="hudLevel" data-i18n-prefix="level">—</span>
           <span id="hudScore">0</span>
           <span id="hudCombo">×0</span>
+          <span id="hudSession" class="hud-session" hidden></span>
           <span id="hudTimer" class="hud-timer" aria-live="polite">—</span>
           <span id="hudErrors" class="hud-errors" hidden></span>
         </div>
@@ -47,9 +48,19 @@
           <div id="arrowPreview" class="arrow-preview" aria-hidden="true"></div>
         </div>
         <p class="hint" id="playHint" data-i18n="playHint"></p>
-        <div class="play-controls">
+        <div class="play-controls" id="playControlsDefault">
           <button type="button" id="btnStartRun" data-i18n="startRun">Start</button>
           <button type="button" id="btnEndRun" data-i18n="endRun">End run</button>
+        </div>
+        <div id="kioskMenu" class="kiosk-menu" hidden>
+          <p class="kiosk-menu__label" data-i18n="kioskMenuTitle">Festival modes</p>
+          <div class="kiosk-menu__grid">
+            <button type="button" class="kiosk-menu__btn" id="kioskBtnRestart" data-i18n="kioskRestart">Start over</button>
+            <button type="button" class="kiosk-menu__btn" id="kioskBtnEasy" data-i18n="kioskEasy">Easy (no penalties)</button>
+            <button type="button" class="kiosk-menu__btn" id="kioskBtnSprint" data-i18n="kioskSprint">Sprint (30s)</button>
+            <button type="button" class="kiosk-menu__btn" id="kioskBtnLottery" data-i18n="kioskLottery">Lottery (one mistake)</button>
+            <button type="button" class="kiosk-menu__btn" id="kioskBtnMarathon" data-i18n="kioskMarathon">Marathon (5 min)</button>
+          </div>
         </div>
       </div>
 
