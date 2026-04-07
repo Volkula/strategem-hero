@@ -1851,11 +1851,13 @@
     };
   }
 
-  function handleClassicGameOver(finalScore, reason) {
+  function handleClassicGameOver(finalScore, reason, solvedFromEngine) {
     stopLoadingLineTicker();
     if (!isKioskMode()) return;
     const preset = lastKioskPreset;
-    const solvedBeforeStop = getSolvedStratagemCount();
+    const solvedBeforeStop = Number.isFinite(Number(solvedFromEngine))
+      ? Math.max(0, Math.floor(Number(solvedFromEngine)))
+      : getSolvedStratagemCount();
     if (preset === "lottery" && (reason === "wrong" || reason === "time")) {
       ClassicStratagemHero.stop();
       showFinalScreenModal("defeat", finalScore, solvedBeforeStop, {
@@ -1989,12 +1991,12 @@
         updateErrorsHud();
         updateSessionHud();
       },
-      onGameOver: (finalScore, gameOverReason) => {
+      onGameOver: (finalScore, gameOverReason, solvedCount) => {
         if (run && run.classicRun) {
           clearAutomatonTakeoverForRunEnd();
           run = null;
         }
-        handleClassicGameOver(finalScore, gameOverReason);
+        handleClassicGameOver(finalScore, gameOverReason, solvedCount);
       },
       onVolumeChange: (v) => {
         cfg.sfxVolume = v;

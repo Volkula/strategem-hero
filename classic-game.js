@@ -703,7 +703,7 @@
     showScreen("game_over");
     stopMusic();
     playSfx("game_over");
-    deps.onGameOver && deps.onGameOver(score, why);
+    deps.onGameOver && deps.onGameOver(score, why, completedStratagemCount);
   }
 
   function loopRoundStarting() {
