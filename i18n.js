@@ -1,4 +1,6 @@
 /* global window */
+/* HELP MODAL: keys helpRulesButtonAria, helpModal*, helpSection*, helpInvasion* — keep in sync with real rules
+   (classic play, invasions, General Brasch, kiosk, editor, settings) whenever behaviour or defaults change. */
 (function () {
   const STRINGS = {
     en: {
@@ -15,6 +17,12 @@
       endRun: "End run",
       level: "Level",
       settingsTitle: "Settings",
+      resetAllSettings: "Reset all settings to defaults",
+      resetSectionDefaults: "Reset this section to defaults",
+      resetFieldToDefault: "Reset this field to default",
+      confirmResetAllSettings:
+        "Reset the entire configuration to factory defaults? Stratagem editor overrides and all custom values will be lost.",
+      confirmResetSection: "Reset only this section to its default values?",
       themeAudio: "Background theme (audio / video)",
       themeType: "Source",
       themeNone: "None",
@@ -34,6 +42,7 @@
       playKioskTitle: "Play & kiosk",
       playKioskHelp:
         "Normal play and festival kiosk (?kiosk=1) read the same saved settings. The app writes your config to local storage and mirrors it into cookies when the payload fits (~80KB across chunks); huge embedded images may stay in local storage only.",
+      defaultKioskLabel: "Open in kiosk mode by default (add ?kiosk=1 when the URL has no kiosk flag)",
       restartOnSpaceLabel: "Restart run with Space (on Play screen; disabled while typing in inputs)",
       kioskAutoRestartLabel: "Kiosk: auto-restart the same festival mode after closing the final screen",
       kioskAutoRestartDelayLabel: "Auto-restart delay (ms)",
@@ -41,10 +50,42 @@
         "This app stores your settings in the browser (local storage) and may mirror them in cookies (sh5_*) so preferences travel with the same site origin—including kiosk mode. You can clear them anytime via browser settings.",
       ministryCookiesFlavor:
         "Citizen! The Ministry of Cookies reminds you: every crumb of configuration strengthens Managed Deliciousness. Reporting unauthorized snack deletion is patriotic. Freedom requires chocolate chips. Skepticism is treason. Treason is bad.",
-      footerCookies:
-        "Storage: local storage + optional cookie mirror (see Settings → Config). Not a tracker—just your trainer data.",
-      footerWikiquote:
-        "Loading-style lines during play are adapted from Wikiquote — Helldivers 2 (Ship TV, General Brasch, Helldiver dialogue), CC-BY-SA. Source: https://en.wikiquote.org/wiki/Helldivers_2",
+      footerTagline: "Fan-made training tool. Not affiliated with Arrowhead Game Studios or Sony.",
+      creditsOpenButton: "Credits & sources",
+      creditsModalTitle: "Third-party assets & licenses",
+      creditsClose: "Close",
+      creditsModalMaintenanceHint:
+        "When you add new assets to this project, update the list in this window (and keep assets/THIRD_PARTY.txt in sync for developers).",
+      helpRulesButtonAria: "How to play and rules",
+      helpModalTitle: "How to play",
+      helpModalClose: "Close",
+      helpSectionClassicTitle: "Classic mode (main game)",
+      helpSectionClassicP1:
+        "The playfield shows a queue of stratagems. Enter the arrow code for the active stratagem with WASD or the arrow keys. On touch devices, swipe up / down / left / right on the playfield (if swipes are enabled in Settings).",
+      helpSectionClassicP2:
+        "Finish each code before the round timer runs out. A wrong direction or time-out can cost a life (skull), depending on Settings → Lives & final screen. You score points and may see bonuses between rounds.",
+      helpSectionClassicP3:
+        "Press Play, then any direction key or the Start button to begin. On phones, use Start — swipes on the playfield apply during play, not on the title screen. Classic SFX and music volume is on the slider in the game header.",
+      helpSectionInvasionsTitle: "Invasions (optional modifiers)",
+      helpSectionInvasionsIntro:
+        "After enough successful stratagems in a row, a timed invasion may start. Each faction has its own streak counter; only one invasion is active at a time. Use Settings → Classic invasions to enable factions and set order; use each faction’s section for timings and fog.",
+      helpInvasionAutomaton:
+        "Automaton — Cyberstan-style red UI and font, watermark. During the effect the whole playfield may flip or rotate in a random way, changing again with each new stratagem.",
+      helpInvasionIlluminate:
+        "Illuminate — optional blinking warning, then violet/blue styling, Illuminate font and watermark. While the effect lasts, arrow input is reversed (right-to-left).",
+      helpInvasionTerminid:
+        "Terminid — a semi-transparent spore fog is drawn over the playfield; opacity pulses between the minimum and maximum you set (defaults 40–80%).",
+      helpSectionBraschTitle: "General Brasch burst",
+      helpSectionBraschBody:
+        "Every N successful stratagems in the same round (default 50), a short burst runs: larger UI, optional anthem, portrait banner, and the round timer pauses. It does not trigger on the stratagem that ends the round. Configure N, duration, and media URLs under Settings.",
+      helpSectionKioskTitle: "Kiosk / festival modes",
+      helpSectionKioskBody:
+        "Kiosk mode (?kiosk=1) offers presets: Easy (no harsh penalties), Sprint (score in 30 seconds), Lottery (one mistake ends the run), Marathon (5 minute session). A pressure-style timer may drain between codes in some presets. Optional auto-restart after the final screen is in Settings.",
+      helpSectionOtherTitle: "Editor, theme, and lives",
+      helpSectionOtherBody:
+        "Editor overrides per-stratagem codes, icons, and backgrounds. Theme can add background MP3 or YouTube video. Max mistakes before the custom defeat screen, final-screen text, and QR are under Lives & final screen. Short beeps on direction keys can be muted from the header.",
+      helpModalFooterNote:
+        "Timers, streak lengths, and invasion chances follow your saved Settings. When the game gains new features, this help text should be updated — if something disagrees with Settings, trust Settings. Developers: update the help* strings in i18n.js when behaviour changes.",
       levelsTitle: "Timer & scoring per level",
       levelsHelp:
         "Defaults follow a built-in curve (tighter timer, more points, harsher penalties on higher levels). Edit freely or reset to that curve.",
@@ -69,6 +110,7 @@
       endScreenLinkUrl: "Link URL",
       endScreenLinkText: "Link label",
       endScreenQrUrl: "QR code URL",
+      endScreenShowQrLabel: "Show QR code on final screen",
       endScreenQrHelp: "A QR code is generated from this URL and shown on the final modal.",
       finalScreenQrCaption: "Scan with your phone",
       endScreenImage: "Image file",
@@ -124,10 +166,6 @@
       category_backpacks: "Backpacks",
       category_vehicles: "Vehicles",
       category_mission: "Mission / general",
-      footerLegal:
-        "Helldivers® 2 and related trademarks, logos, names, and other materials are the property of Arrowhead Game Studios AB and Sony Interactive Entertainment. This site is a non-commercial fan work, not affiliated with, endorsed by, or sponsored by Arrowhead or Sony. The authors disclaim all liability for any use of third-party intellectual property; you use this project entirely at your own risk.",
-      footerNote:
-        "Fan trainer: wiki names, community codes. Permit-style SVG icons are vendored from drizzer14/stratagem-hero (MIT). Adjust in editor if a patch changes codes.",
       noCodeWarning: "No code in database — add one in the Editor.",
       unverified: "Unverified code",
       success: "Correct!",
@@ -159,7 +197,9 @@
       kioskTimedEndMsg: "Final score: {score}",
       classicVolumeAria: "Game volume",
       classicPressToStart: "Press any arrow key or WASD to start",
-      classicPressToStartSub: "On touch: swipe on the playfield for directions",
+      classicPressToStartSub: "On touch: tap Start (swipes on the playfield work during play)",
+      classicStartButton: "Start game",
+      classicRestartButton: "Play again",
       classicGetReady: "Get ready",
       classicRoundLabel: "Round",
       classicScoreLabel: "Score",
@@ -169,6 +209,65 @@
       classicTotalScore: "Total",
       classicGameOver: "Game over",
       classicPressRestart: "Press Space or any direction to restart",
+      classicRoundTimerTitle: "Round timer",
+      classicModeTimerTitle: "Mode limit",
+      classicModeTimerAria: "Mode time limit: {time} remaining",
+      classicTimerFrozen: "∞ (no round timer)",
+      classicTimerAriaFrozen: "Round timer disabled for this mode",
+      classicTimerAriaPressure: "Round pressure: {seconds} seconds left",
+      classicTimerBrasch: "GENERAL BRASCH",
+      classicTimerAriaBrasch: "General Brasch: round timer paused",
+      classicComboLabel: "Toward General Brasch",
+      classicComboHud: "{n} / {goal}",
+      generalBraschSettingsTitle: "General Brasch (classic play)",
+      generalBraschSettingsHelp:
+        "Every N successful stratagems in a round: larger UI, optional anthem MP3, round timer paused for the set duration. Does not trigger on the stratagem that ends the round.",
+      generalBraschEnabledLabel: "Enable General Brasch bursts",
+      generalBraschEveryN: "Stratagems per burst (N)",
+      generalBraschDurationMs: "Burst length (ms)",
+      generalBraschAnthemUrl: "Anthem audio URL or path (empty = silence)",
+      generalBraschPortraitUrl: "General Brasch portrait (image URL or path)",
+      generalBraschPortraitHelp:
+        "Large banner during Brasch mode. Default is a local placeholder SVG; you may save art from the wiki (personal use) into assets/images/ and point to it.",
+      classicBraschPortraitAlt: "General Brasch",
+      classicInvasionsOverviewTitle: "Classic invasions — on / off & order",
+      classicInvasionsOverviewHelp:
+        "Enable each faction and choose evaluation order when several invasions are ready on the same success. Durations, streak lengths, and Terminid fog are in each faction’s section below.",
+      invasionSettingsTitle: "Automaton invasion (classic play)",
+      invasionSettingsHelp:
+        "After enough successful stratagems in a row, a Cyberstan-style invasion tint and watermark appear for a random duration.",
+      invasionEnabledLabel: "Enable Automaton invasion",
+      invasionSuccessesMin: "Successes before invasion (min)",
+      invasionSuccessesMax: "Successes before invasion (max)",
+      invasionDurationMinMs: "Invasion length min (ms)",
+      invasionDurationMaxMs: "Invasion length max (ms)",
+      invasionPriorityLabel: "If several invasions trigger on the same success, try first",
+      invasionPriorityAutomaton: "Automatons, then others",
+      invasionPriorityIlluminate: "Illuminate, then others",
+      invasionPriorityTerminid: "Terminids, then others",
+      illuminatiInvasionSettingsTitle: "Illuminate invasion (classic play)",
+      illuminatiInvasionSettingsHelp:
+        "Streak-based event: blinking alert, then violet/blue UI, Illuminate font and watermark, arrows enter right-to-left for a random duration. Order when multiple fire at once is under Automaton invasion.",
+      illuminatiInvasionEnabledLabel: "Enable Illuminate invasion",
+      illuminatiInvasionSuccessesMin: "Successes before invasion (min)",
+      illuminatiInvasionSuccessesMax: "Successes before invasion (max)",
+      illuminatiInvasionDurationMinMs: "Invasion length min (ms)",
+      illuminatiInvasionDurationMaxMs: "Invasion length max (ms)",
+      illuminatiInvasionWarnLeadMs: "Blinking alert before invasion (ms, 0 = skip alert)",
+      illuminateInvasionBannerText: "Illuminate interference — {seconds}s",
+      illuminateInvasionTimerLeft: "Illuminate hold: {time} left",
+      terminidInvasionSettingsTitle: "Terminid invasion (classic play)",
+      terminidInvasionSettingsHelp:
+        "Streak-based spore fog over the playfield; opacity pulses between configurable min and max. Order when multiple invasions fire at once is set under Automaton invasion.",
+      terminidInvasionEnabledLabel: "Enable Terminid invasion",
+      terminidInvasionSuccessesMin: "Successes before invasion (min)",
+      terminidInvasionSuccessesMax: "Successes before invasion (max)",
+      terminidInvasionDurationMinMs: "Invasion length min (ms)",
+      terminidInvasionDurationMaxMs: "Invasion length max (ms)",
+      terminidInvasionFogOpacityMin: "Fog opacity min (0–1)",
+      terminidInvasionFogOpacityMax: "Fog opacity max (0–1)",
+      terminidInvasionFogPulsePeriodMs: "Fog pulse cycle (ms, one min→max→min)",
+      terminidInvasionFogImageUrl: "Fog image URL or path (empty = built-in texture)",
     },
     ru: {
       appTitle: "Stratagem Hero",
@@ -184,6 +283,12 @@
       endRun: "Стоп",
       level: "Уровень",
       settingsTitle: "Настройки",
+      resetAllSettings: "Сбросить все настройки по умолчанию",
+      resetSectionDefaults: "Сбросить этот раздел по умолчанию",
+      resetFieldToDefault: "Сбросить это поле",
+      confirmResetAllSettings:
+        "Сбросить всю конфигурацию к заводским значениям? Потеряются правки редактора стратегем и прочие пользовательские данные.",
+      confirmResetSection: "Сбросить только этот раздел к значениям по умолчанию?",
       themeAudio: "Фон: музыка / видео",
       themeType: "Источник",
       themeNone: "Без фона",
@@ -203,6 +308,7 @@
       playKioskTitle: "Игра и киоск",
       playKioskHelp:
         "Обычная игра и фестивальный киоск (?kiosk=1) используют одни и те же сохранённые настройки. Конфиг пишется в local storage и дублируется в куки (sh5_*), если размер позволяет (~80 КБ чанками); тяжёлые картинки в конфиге могут остаться только в local storage.",
+      defaultKioskLabel: "По умолчанию открывать в киоске (?kiosk=1, если в адресе нет флага kiosk)",
       restartOnSpaceLabel: "Перезапуск забега по пробелу (экран игры; не в полях ввода)",
       kioskAutoRestartLabel: "Киоск: автоматически начинать тот же режим после финального экрана",
       kioskAutoRestartDelayLabel: "Задержка автостарта (мс)",
@@ -210,10 +316,42 @@
         "Приложение хранит настройки в браузере (local storage) и может дублировать их в куки (sh5_*), чтобы параметры совпадали на том же сайте — в том числе в киоске. Очистить можно в настройках браузера.",
       ministryCookiesFlavor:
         "Гражданин! Министерство Кукисов напоминает: каждая крошка конфига укрепляет Управляемую Вкуснятину. Немедленно доносите на соседа, удалившего печенье без ордера. Свобода требует шоколадной крошки. Скептицизм — измена. Измена — плохо.",
-      footerCookies:
-        "Хранение: local storage и при необходимости зеркало в куки (см. Настройки → Конфиг). Это не трекер — только данные тренажёра.",
-      footerWikiquote:
-        "Строки в духе загрузки во время игры — по мотивам Wikiquote — Helldivers 2 (Ship TV, General Brasch, Helldiver dialogue), CC-BY-SA. Источник: https://en.wikiquote.org/wiki/Helldivers_2",
+      footerTagline: "Фанатский тренажёр. Не связан с Arrowhead Game Studios или Sony.",
+      creditsOpenButton: "Займствования и источники",
+      creditsModalTitle: "Сторонние материалы и лицензии",
+      creditsClose: "Закрыть",
+      creditsModalMaintenanceHint:
+        "При добавлении новых ассетов обновляйте список в этом окне (и синхронно — assets/THIRD_PARTY.txt для разработчиков).",
+      helpRulesButtonAria: "Как играть и правила",
+      helpModalTitle: "Как играть",
+      helpModalClose: "Закрыть",
+      helpSectionClassicTitle: "Классический режим (основная игра)",
+      helpSectionClassicP1:
+        "На поле очередь стратегем. Вводите код активной стратегемы стрелками или WASD. На сенсоре — свайпы вверх / вниз / влево / вправо по полю (если свайпы включены в настройках).",
+      helpSectionClassicP2:
+        "Уложитесь в таймер раунда. Неверное направление или таймаут могут отнять жизнь (череп), в зависимости от раздела «Жизни и финальный экран». Очки и бонусы показываются между раундами.",
+      helpSectionClassicP3:
+        "Нажмите «Игра», затем любую клавишу направления или кнопку «Старт». На телефоне для начала раунда используйте «Старт» — свайпы по полю действуют во время игры, а не на титульном экране. Громкость SFX и музыки — ползунок в шапке игры.",
+      helpSectionInvasionsTitle: "Вторжения (дополнительные модификаторы)",
+      helpSectionInvasionsIntro:
+        "После серии успешных стратегем может начаться ограниченное по времени «вторжение». У каждой фракции свой счётчик; активно только одно вторжение. В настройках раздел «Классические вторжения» — вкл./выкл. фракций и порядок; длительность, серии и туман — в разделах фракций.",
+      helpInvasionAutomaton:
+        "Автоматоны — красноватый интерфейс в духе Киберстана, водяной знак. Поле может зеркалиться или поворачиваться случайным образом и меняться при каждой новой стратегеме.",
+      helpInvasionIlluminate:
+        "Illuminate — при желании мигающее предупреждение, затем сине-фиолетовый стиль, шрифт и знак. Пока эффект идёт, ввод стрелок зеркален (справа налево).",
+      helpInvasionTerminid:
+        "Терминиды — полупрозрачный споровый туман поверх поля; непрозрачность пульсирует между заданным минимумом и максимумом (по умолчанию 40–80%).",
+      helpSectionBraschTitle: "Всплеск «Генерал Браш»",
+      helpSectionBraschBody:
+        "Каждые N успешных стратегем в том же раунде (по умолчанию 50) запускают короткий режим: крупнее интерфейс, опционально гимн и портрет, таймер раунда на паузе. Не срабатывает на стратегеме, которая завершает раунд. Параметры — в настройках.",
+      helpSectionKioskTitle: "Киоск / фестивальные режимы",
+      helpSectionKioskBody:
+        "Режим киоска (?kiosk=1): Простой (без жёстких штрафов), Спринт (30 с на очки), Лотерея (до первой ошибки), Марафон (сессия 5 мин). В части режимов между кодами может убывать «давление» по таймеру. Автоперезапуск после финального экрана — в настройках.",
+      helpSectionOtherTitle: "Редактор, тема, жизни",
+      helpSectionOtherBody:
+        "Редактор задаёт коды, иконки и фоны по отдельным стратегемам. Тема — фоновый MP3 или YouTube. Лимит ошибок, текст финальных экранов и QR — в «Жизни и финальный экран». Короткие звуки по направлениям можно выключить кнопкой в шапке.",
+      helpModalFooterNote:
+        "Точные таймеры, длины серий и шансы вторжений берутся из сохранённых настроек. При новых функциях этот текст нужно обновлять — при расхождении ориентируйтесь на настройки. Разработчикам: правьте ключи help* в i18n.js при изменении логики игры.",
       levelsTitle: "Таймер и очки по уровням",
       levelsHelp:
         "По умолчанию — встроенная кривая: на высоких уровнях меньше времени, больше очков за успех и жёстче штрафы. Можно править вручную или сбросить к кривой.",
@@ -238,6 +376,7 @@
       endScreenLinkUrl: "URL ссылки",
       endScreenLinkText: "Текст ссылки",
       endScreenQrUrl: "URL для QR-кода",
+      endScreenShowQrLabel: "Показывать QR-код на финальном экране",
       endScreenQrHelp: "По этому адресу генерируется QR-код на финальном экране.",
       finalScreenQrCaption: "Сканируйте телефоном",
       endScreenImage: "Файл картинки",
@@ -294,10 +433,6 @@
       category_backpacks: "Backpacks",
       category_vehicles: "Vehicles",
       category_mission: "Mission stratagems",
-      footerLegal:
-        "Helldivers® 2, связанные товарные знаки, логотипы, названия и иные материалы принадлежат Arrowhead Game Studios AB и Sony Interactive Entertainment. Этот сайт — некоммерческое фанатское произведение, не связанное с Arrowhead или Sony, не одобренное и не спонсируемое ими. Авторы не несут ответственности за любое использование чужой интеллектуальной собственности; вы пользуетесь проектом на свой страх и риск.",
-      footerNote:
-        "Fan trainer: stratagem names from helldivers.wiki.gg (English). SVG icons from drizzer14/stratagem-hero (MIT). Verify codes after patches.",
       noCodeWarning: "No stratagem code in database — add one in the Editor.",
       unverified: "Unverified code",
       success: "Верно!",
@@ -329,7 +464,9 @@
       kioskTimedEndMsg: "Итоговые очки: {score}",
       classicVolumeAria: "Громкость игры",
       classicPressToStart: "Нажмите стрелку или WASD, чтобы начать",
-      classicPressToStartSub: "На сенсоре: свайпы по полю для направлений",
+      classicPressToStartSub: "На сенсоре: кнопка «Старт» (свайпы по полю — во время игры)",
+      classicStartButton: "Старт",
+      classicRestartButton: "Сыграть снова",
       classicGetReady: "Приготовьтесь",
       classicRoundLabel: "Раунд",
       classicScoreLabel: "Очки",
@@ -339,6 +476,65 @@
       classicTotalScore: "Всего",
       classicGameOver: "Игра окончена",
       classicPressRestart: "Пробел или направление — начать снова",
+      classicRoundTimerTitle: "Таймер раунда",
+      classicModeTimerTitle: "Лимит режима",
+      classicModeTimerAria: "Ограничение режима: осталось {time}",
+      classicTimerFrozen: "∞ (без таймера раунда)",
+      classicTimerAriaFrozen: "Таймер раунда отключён в этом режиме",
+      classicTimerAriaPressure: "Давление раунда: осталось {seconds} с",
+      classicTimerBrasch: "ГЕНЕРАЛ БРАШ",
+      classicTimerAriaBrasch: "Генерал Браш: таймер раунда на паузе",
+      classicComboLabel: "До режима генерала Браша",
+      classicComboHud: "{n} / {goal}",
+      generalBraschSettingsTitle: "Генерал Браш (классический режим)",
+      generalBraschSettingsHelp:
+        "Каждые N успешных стратегем в раунде: крупнее интерфейс, по желанию гимн (MP3), таймер раунда останавливается на заданное время. Не срабатывает на стратегеме, завершающей раунд.",
+      generalBraschEnabledLabel: "Включить режим генерала Браша",
+      generalBraschEveryN: "Стратегем до вспышки (N)",
+      generalBraschDurationMs: "Длительность вспышки (мс)",
+      generalBraschAnthemUrl: "URL или путь к гимну (пусто — без звука)",
+      generalBraschPortraitUrl: "Портрет генерала Браша (URL или путь к изображению)",
+      generalBraschPortraitHelp:
+        "Крупная плашка в режиме Браша. По умолчанию — локальный SVG-заглушка; можно сохранить арт с вики в assets/images/ и указать путь.",
+      classicBraschPortraitAlt: "Генерал Браш",
+      classicInvasionsOverviewTitle: "Классические вторжения — вкл./выкл. и порядок",
+      classicInvasionsOverviewHelp:
+        "Включайте фракции по отдельности и задайте порядок проверки, если на одном успехе готовы несколько вторжений. Длительность, серии и туман терминидов настраиваются в соответствующих разделах ниже.",
+      invasionSettingsTitle: "Вторжение автоматонов (классический режим)",
+      invasionSettingsHelp:
+        "После серии успешных стратегем накладывается тон и водяной знак в духе Киберстана на случайное время.",
+      invasionEnabledLabel: "Включить вторжение автоматонов",
+      invasionSuccessesMin: "Успехов до вторжения (мин.)",
+      invasionSuccessesMax: "Успехов до вторжения (макс.)",
+      invasionDurationMinMs: "Длительность вторжения мин. (мс)",
+      invasionDurationMaxMs: "Длительность вторжения макс. (мс)",
+      invasionPriorityLabel: "Если несколько вторжений срабатывают на одном успехе, порядок попыток",
+      invasionPriorityAutomaton: "Сначала автоматоны, потом остальные",
+      invasionPriorityIlluminate: "Сначала Illuminate, потом остальные",
+      invasionPriorityTerminid: "Сначала терминиды, потом остальные",
+      illuminatiInvasionSettingsTitle: "Нашествие иллюминатов (классический режим)",
+      illuminatiInvasionSettingsHelp:
+        "Серия успехов: мигающее предупреждение, затем сине-фиолетовый интерфейс, шрифт и знак Illuminate, ввод стрелок справа налево на случайное время. Порядок при одновременном срабатывании — в блоке вторжения автоматонов.",
+      illuminatiInvasionEnabledLabel: "Включить вторжение Illuminate",
+      illuminatiInvasionSuccessesMin: "Успехов до вторжения (мин.)",
+      illuminatiInvasionSuccessesMax: "Успехов до вторжения (макс.)",
+      illuminatiInvasionDurationMinMs: "Длительность вторжения мин. (мс)",
+      illuminatiInvasionDurationMaxMs: "Длительность вторжения макс. (мс)",
+      illuminatiInvasionWarnLeadMs: "Мигание перед вторжением (мс, 0 — без предупреждения)",
+      illuminateInvasionBannerText: "Вмешательство Illuminate — {seconds} с",
+      illuminateInvasionTimerLeft: "Удержание Illuminate: осталось {time}",
+      terminidInvasionSettingsTitle: "Вторжение терминидов (классический режим)",
+      terminidInvasionSettingsHelp:
+        "Серия успехов: полупрозрачный споровый туман поверх поля, сила меняется между заданными минимумом и максимумом. Порядок при одновременном срабатывании — в блоке вторжения автоматонов.",
+      terminidInvasionEnabledLabel: "Включить вторжение терминидов",
+      terminidInvasionSuccessesMin: "Успехов до вторжения (мин.)",
+      terminidInvasionSuccessesMax: "Успехов до вторжения (макс.)",
+      terminidInvasionDurationMinMs: "Длительность вторжения мин. (мс)",
+      terminidInvasionDurationMaxMs: "Длительность вторжения макс. (мс)",
+      terminidInvasionFogOpacityMin: "Мин. непрозрачность тумана (0–1)",
+      terminidInvasionFogOpacityMax: "Макс. непрозрачность тумана (0–1)",
+      terminidInvasionFogPulsePeriodMs: "Цикл пульсации тумана (мс, мин→макс→мин)",
+      terminidInvasionFogImageUrl: "Картинка тумана (URL или путь; пусто — встроенная текстура)",
     },
   };
 

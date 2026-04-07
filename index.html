@@ -25,6 +25,16 @@
           <span data-i18n="locale">Locale</span>
           <select id="localeSelect"></select>
         </label>
+        <button
+          type="button"
+          id="btnHelpRules"
+          class="btn-help-rules"
+          aria-haspopup="dialog"
+          aria-controls="helpRulesModal"
+        >
+          <span class="visually-hidden" data-i18n="helpRulesButtonAria">How to play</span>
+          <span class="btn-help-rules__mark" aria-hidden="true">?</span>
+        </button>
         <button type="button" id="btnSettings" data-i18n="settings">Settings</button>
         <button type="button" id="btnEditor" data-i18n="editor">Editor</button>
         <button type="button" id="btnKiosk" data-i18n="btnKiosk">Kiosk</button>
@@ -37,9 +47,10 @@
     <div id="settingsSavedToast" class="settings-saved-toast" hidden role="status" aria-live="polite"></div>
 
     <section id="panelPlay" class="panel active">
-      <div id="youtubeBackdrop" class="youtube-backdrop" aria-hidden="true"></div>
       <div id="playfield" class="playfield">
+        <div id="youtubeBackdrop" class="youtube-backdrop" aria-hidden="true"></div>
         <div id="cyberstanWatermark" class="cyberstan-watermark" hidden aria-hidden="true">CYBERSTAN</div>
+        <div id="illuminateWatermark" class="illuminate-watermark" hidden aria-hidden="true">ILLUMINATE</div>
         <div id="kioskArcadeSplash" class="kiosk-arcade-splash" hidden>
           <h2 class="kiosk-arcade-splash__title" data-i18n="kioskArcadeTitle">Stratagem Hero</h2>
           <p class="kiosk-arcade-splash__prompt" data-i18n="kioskArcadePrompt">Press any Stratagem Input to Start!</p>
@@ -65,7 +76,10 @@
 
           <div id="classicScreenStart" class="classic-screen classic-screen--start">
             <p class="classic-screen__title" data-i18n="classicPressToStart">Press any arrow key or WASD to start</p>
-            <p class="classic-screen__sub small" data-i18n="classicPressToStartSub">Swipe on the playfield on touch devices</p>
+            <p class="classic-screen__sub small" data-i18n="classicPressToStartSub">On touch: use the Start button (swipes work during play)</p>
+            <button type="button" id="classicBtnStart" class="classic-screen__primary-btn" data-i18n="classicStartButton">
+              Start game
+            </button>
           </div>
 
           <div id="classicScreenRoundStarting" class="classic-screen" hidden>
@@ -85,17 +99,73 @@
                 ><span data-i18n="classicScoreLabel">Score</span> <span id="classicInfoScore">0</span></span
               >
             </div>
+            <div id="classicComboWrap" class="classic-combo-hud" hidden>
+              <span data-i18n="classicComboLabel">Toward General Brasch</span>
+              <span id="classicComboHud" class="classic-combo-hud__value">0 / 50</span>
+            </div>
+            <div id="illuminateInvasionHud" class="illuminate-invasion-hud" hidden>
+              <div
+                id="illuminateInvasionBanner"
+                class="illuminate-invasion-banner"
+                hidden
+                role="status"
+                aria-live="polite"
+              ></div>
+              <div
+                id="illuminateInvasionTimer"
+                class="illuminate-invasion-timer"
+                hidden
+                role="status"
+                aria-live="polite"
+              ></div>
+            </div>
+            <div id="classicBraschPortraitWrap" class="classic-brasch-portrait-wrap" hidden>
+              <img id="classicBraschPortrait" class="classic-brasch-portrait" width="400" height="200" alt="" />
+            </div>
+            <div
+              id="hudSkullsRow"
+              class="hud-skulls-row classic-hud-skulls"
+              hidden
+              role="group"
+              aria-live="polite"
+              aria-label=""
+            >
+              <div id="hudErrors" class="hud-skulls"></div>
+            </div>
             <div id="classicStratList" class="classic-strat-list"></div>
             <h2 id="classicActiveName" class="classic-active-name"></h2>
             <div id="classicSeqHost" class="classic-seq-host"></div>
-            <div
-              class="classic-timer"
-              role="progressbar"
-              aria-valuemin="0"
-              aria-valuemax="100"
-              aria-valuenow="100"
-            >
-              <div id="classicTimerFill" class="classic-timer__fill"></div>
+            <div class="classic-timers-row" id="classicTimersRow" aria-live="polite">
+              <div class="classic-timer-panel">
+                <div class="classic-timer-panel__title" data-i18n="classicRoundTimerTitle">Round timer</div>
+                <div
+                  id="classicTimerBar"
+                  class="classic-timer"
+                  role="progressbar"
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                  aria-valuenow="100"
+                  aria-label=""
+                >
+                  <div id="classicTimerFill" class="classic-timer__fill"></div>
+                </div>
+                <div id="classicTimerText" class="classic-timer__label">10.0s</div>
+              </div>
+              <div id="classicModeTimerPanel" class="classic-timer-panel classic-timer-panel--mode" hidden>
+                <div class="classic-timer-panel__title" data-i18n="classicModeTimerTitle">Mode limit</div>
+                <div
+                  id="classicModeTimerBar"
+                  class="classic-timer classic-timer--mode"
+                  role="progressbar"
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                  aria-valuenow="100"
+                  aria-label=""
+                >
+                  <div id="classicModeTimerFill" class="classic-timer__fill classic-timer__fill--mode"></div>
+                </div>
+                <div id="classicModeTimerText" class="classic-timer__label classic-timer__label--mode">—</div>
+              </div>
             </div>
             <p id="helldiversLoadingTicker" class="classic-game__phrase-ticker" hidden aria-live="polite"></p>
           </div>
@@ -126,6 +196,9 @@
             <p id="classicGoRestart" class="classic-screen__sub" hidden data-i18n="classicPressRestart">
               Press Space or any direction to restart
             </p>
+            <button type="button" id="classicBtnRestart" class="classic-screen__primary-btn" hidden data-i18n="classicRestartButton">
+              Play again
+            </button>
           </div>
 
           <div id="classicGlitch" class="classic-game__glitch" hidden aria-hidden="true"></div>
@@ -142,6 +215,7 @@
             <button type="button" class="kiosk-menu__btn" id="kioskBtnMarathon" data-i18n="kioskMarathon">Marathon (5 min)</button>
           </div>
         </div>
+        <div id="terminidFogLayer" class="terminid-fog-overlay" hidden aria-hidden="true"></div>
       </div>
 
       <div id="gameOverModal" class="game-over-modal" hidden>
@@ -164,6 +238,11 @@
 
     <section id="panelSettings" class="panel">
       <h2 data-i18n="settingsTitle">Settings</h2>
+      <p class="settings-global-reset">
+        <button type="button" id="btnResetAllSettings" class="btn-danger-outline" data-i18n="resetAllSettings">
+          Reset all settings to defaults
+        </button>
+      </p>
 
       <details class="settings-details">
         <summary class="settings-details__summary"><span data-i18n="themeAudio">Background theme (audio / video)</span></summary>
@@ -192,6 +271,11 @@
             <input type="checkbox" id="youtubeMute" />
             <span data-i18n="youtubeMute">Mute YouTube (use only as visual background)</span>
           </label>
+          <div class="settings-section-actions">
+            <button type="button" class="btn-reset-section" data-reset-section="theme" data-i18n="resetSectionDefaults">
+              Reset this section to defaults
+            </button>
+          </div>
         </div>
       </details>
 
@@ -205,6 +289,11 @@
           </label>
           <p class="small" data-i18n="directionSoundsKeyHelp">Short beep when you press a Stratagem direction key (keyboard only).</p>
           <div class="bind-grid" id="bindGrid"></div>
+          <div class="settings-section-actions">
+            <button type="button" class="btn-reset-section" data-reset-section="bindings" data-i18n="resetSectionDefaults">
+              Reset this section to defaults
+            </button>
+          </div>
         </div>
       </details>
 
@@ -216,6 +305,11 @@
             <button type="button" id="btnResetLevelCurve" data-i18n="resetLevelCurve">Reset levels to built-in curve</button>
           </div>
           <div id="levelRows" class="level-rows"></div>
+          <div class="settings-section-actions">
+            <button type="button" class="btn-reset-section" data-reset-section="levels" data-i18n="resetSectionDefaults">
+              Reset this section to defaults
+            </button>
+          </div>
         </div>
       </details>
 
@@ -235,6 +329,192 @@
             <input type="checkbox" id="countWrongAsError" checked />
             <span data-i18n="countWrongAsError">Count wrong direction as a mistake</span>
           </label>
+          <div class="settings-section-actions">
+            <button type="button" class="btn-reset-section" data-reset-section="gameRules" data-i18n="resetSectionDefaults">
+              Reset this section to defaults
+            </button>
+          </div>
+        </div>
+      </details>
+
+      <details class="settings-details">
+        <summary class="settings-details__summary"><span data-i18n="classicInvasionsOverviewTitle">Classic invasions — on / off &amp; order</span></summary>
+        <div class="settings-details__inner">
+          <p class="small" data-i18n="classicInvasionsOverviewHelp">
+            Turn factions on or off and choose which invasion is evaluated first when several are ready on the same success. Timing and fog options are in each faction’s section below.
+          </p>
+          <label class="block">
+            <span data-i18n="invasionPriorityLabel">If several invasions trigger on the same success, try first</span>
+            <select id="invasionPriority">
+              <option value="automaton" data-i18n="invasionPriorityAutomaton">Automatons, then others</option>
+              <option value="illuminate" data-i18n="invasionPriorityIlluminate">Illuminate, then others</option>
+              <option value="terminid" data-i18n="invasionPriorityTerminid">Terminids, then others</option>
+            </select>
+          </label>
+          <label class="inline">
+            <input type="checkbox" id="invasionEnabled" checked />
+            <span data-i18n="invasionEnabledLabel">Enable Automaton invasion</span>
+          </label>
+          <label class="inline">
+            <input type="checkbox" id="illuminatiInvasionEnabled" checked />
+            <span data-i18n="illuminatiInvasionEnabledLabel">Enable Illuminate invasion</span>
+          </label>
+          <label class="inline">
+            <input type="checkbox" id="terminidInvasionEnabled" checked />
+            <span data-i18n="terminidInvasionEnabledLabel">Enable Terminid invasion</span>
+          </label>
+          <div class="settings-section-actions">
+            <button type="button" class="btn-reset-section" data-reset-section="classicInvasionsOverview" data-i18n="resetSectionDefaults">
+              Reset this section to defaults
+            </button>
+          </div>
+        </div>
+      </details>
+
+      <details class="settings-details">
+        <summary class="settings-details__summary"><span data-i18n="invasionSettingsTitle">Automaton invasion (classic play)</span></summary>
+        <div class="settings-details__inner">
+          <p class="small" data-i18n="invasionSettingsHelp">
+            After enough successful stratagems in a row, a Cyberstan-style “invasion” tint and watermark appear for a random duration.
+          </p>
+          <label class="block">
+            <span data-i18n="invasionSuccessesMin">Successes before invasion (min)</span>
+            <input type="number" id="invasionSuccessesMin" min="1" max="99" step="1" value="10" />
+          </label>
+          <label class="block">
+            <span data-i18n="invasionSuccessesMax">Successes before invasion (max)</span>
+            <input type="number" id="invasionSuccessesMax" min="1" max="99" step="1" value="12" />
+          </label>
+          <label class="block">
+            <span data-i18n="invasionDurationMinMs">Invasion length min (ms)</span>
+            <input type="number" id="invasionDurationMinMs" min="1000" max="300000" step="500" value="20000" />
+          </label>
+          <label class="block">
+            <span data-i18n="invasionDurationMaxMs">Invasion length max (ms)</span>
+            <input type="number" id="invasionDurationMaxMs" min="1000" max="300000" step="500" value="40000" />
+          </label>
+          <div class="settings-section-actions">
+            <button type="button" class="btn-reset-section" data-reset-section="classicInvasion" data-i18n="resetSectionDefaults">
+              Reset this section to defaults
+            </button>
+          </div>
+        </div>
+      </details>
+
+      <details class="settings-details">
+        <summary class="settings-details__summary"><span data-i18n="illuminatiInvasionSettingsTitle">Illuminate invasion (classic play)</span></summary>
+        <div class="settings-details__inner">
+          <p class="small" data-i18n="illuminatiInvasionSettingsHelp">
+            Streak-based Illuminate-style tint, font, and watermark for a random duration; optional blinking alert first. Enable/disable and order are in “Classic invasions” above.
+          </p>
+          <label class="block">
+            <span data-i18n="illuminatiInvasionSuccessesMin">Successes before invasion (min)</span>
+            <input type="number" id="illuminatiInvasionSuccessesMin" min="1" max="99" step="1" value="10" />
+          </label>
+          <label class="block">
+            <span data-i18n="illuminatiInvasionSuccessesMax">Successes before invasion (max)</span>
+            <input type="number" id="illuminatiInvasionSuccessesMax" min="1" max="99" step="1" value="12" />
+          </label>
+          <label class="block">
+            <span data-i18n="illuminatiInvasionDurationMinMs">Invasion length min (ms)</span>
+            <input type="number" id="illuminatiInvasionDurationMinMs" min="1000" max="300000" step="500" value="20000" />
+          </label>
+          <label class="block">
+            <span data-i18n="illuminatiInvasionDurationMaxMs">Invasion length max (ms)</span>
+            <input type="number" id="illuminatiInvasionDurationMaxMs" min="1000" max="300000" step="500" value="40000" />
+          </label>
+          <label class="block">
+            <span data-i18n="illuminatiInvasionWarnLeadMs">Blinking alert before invasion (ms, 0 = off)</span>
+            <input type="number" id="illuminatiInvasionWarnLeadMs" min="0" max="60000" step="500" value="5000" />
+          </label>
+          <div class="settings-section-actions">
+            <button type="button" class="btn-reset-section" data-reset-section="illuminati" data-i18n="resetSectionDefaults">
+              Reset this section to defaults
+            </button>
+          </div>
+        </div>
+      </details>
+
+      <details class="settings-details">
+        <summary class="settings-details__summary"><span data-i18n="terminidInvasionSettingsTitle">Terminid invasion (classic play)</span></summary>
+        <div class="settings-details__inner">
+          <p class="small" data-i18n="terminidInvasionSettingsHelp">
+            Streak-based spore fog over the playfield; opacity pulses between configurable levels. Enable/disable and order are in “Classic invasions” above.
+          </p>
+          <label class="block">
+            <span data-i18n="terminidInvasionSuccessesMin">Successes before invasion (min)</span>
+            <input type="number" id="terminidInvasionSuccessesMin" min="1" max="99" step="1" value="10" />
+          </label>
+          <label class="block">
+            <span data-i18n="terminidInvasionSuccessesMax">Successes before invasion (max)</span>
+            <input type="number" id="terminidInvasionSuccessesMax" min="1" max="99" step="1" value="12" />
+          </label>
+          <label class="block">
+            <span data-i18n="terminidInvasionDurationMinMs">Invasion length min (ms)</span>
+            <input type="number" id="terminidInvasionDurationMinMs" min="1000" max="300000" step="500" value="20000" />
+          </label>
+          <label class="block">
+            <span data-i18n="terminidInvasionDurationMaxMs">Invasion length max (ms)</span>
+            <input type="number" id="terminidInvasionDurationMaxMs" min="1000" max="300000" step="500" value="40000" />
+          </label>
+          <label class="block">
+            <span data-i18n="terminidInvasionFogOpacityMin">Fog opacity min (0–1)</span>
+            <input type="number" id="terminidInvasionFogOpacityMin" min="0" max="1" step="0.05" value="0.4" />
+          </label>
+          <label class="block">
+            <span data-i18n="terminidInvasionFogOpacityMax">Fog opacity max (0–1)</span>
+            <input type="number" id="terminidInvasionFogOpacityMax" min="0" max="1" step="0.05" value="0.8" />
+          </label>
+          <label class="block">
+            <span data-i18n="terminidInvasionFogPulsePeriodMs">Fog pulse cycle (ms, one min→max→min)</span>
+            <input type="number" id="terminidInvasionFogPulsePeriodMs" min="400" max="120000" step="100" value="4500" />
+          </label>
+          <label class="block">
+            <span data-i18n="terminidInvasionFogImageUrl">Fog image URL or path (empty = built-in texture)</span>
+            <input type="text" id="terminidInvasionFogImageUrl" spellcheck="false" autocomplete="off" placeholder="assets/images/myst.png" />
+          </label>
+          <div class="settings-section-actions">
+            <button type="button" class="btn-reset-section" data-reset-section="terminid" data-i18n="resetSectionDefaults">
+              Reset this section to defaults
+            </button>
+          </div>
+        </div>
+      </details>
+
+      <details class="settings-details">
+        <summary class="settings-details__summary"><span data-i18n="generalBraschSettingsTitle">General Brasch (classic play)</span></summary>
+        <div class="settings-details__inner">
+          <p class="small" data-i18n="generalBraschSettingsHelp">
+            Every N successful stratagems in a round: larger UI, optional anthem, round timer paused for a few seconds.
+          </p>
+          <label class="inline">
+            <input type="checkbox" id="generalBraschEnabled" checked />
+            <span data-i18n="generalBraschEnabledLabel">Enable General Brasch bursts</span>
+          </label>
+          <label class="block">
+            <span data-i18n="generalBraschEveryN">Stratagems per burst (N)</span>
+            <input type="number" id="generalBraschEveryN" min="1" max="999" step="1" value="50" />
+          </label>
+          <label class="block">
+            <span data-i18n="generalBraschDurationMs">Burst length (ms)</span>
+            <input type="number" id="generalBraschDurationMs" min="1000" max="120000" step="500" value="10000" />
+          </label>
+          <label class="block">
+            <span data-i18n="generalBraschAnthemUrl">Anthem audio URL or path (empty = silence)</span>
+            <input type="text" id="generalBraschAnthemUrl" placeholder="" />
+          </label>
+          <label class="block">
+            <span data-i18n="generalBraschPortraitUrl">General Brasch portrait (image URL or path)</span>
+            <input type="text" id="generalBraschPortraitUrl" placeholder="" />
+          </label>
+          <p class="small" data-i18n="generalBraschPortraitHelp">
+            Shown large during Brasch mode. You can use a local file under assets/images/ or reference the wiki article for art.
+          </p>
+          <div class="settings-section-actions">
+            <button type="button" class="btn-reset-section" data-reset-section="generalBrasch" data-i18n="resetSectionDefaults">
+              Reset this section to defaults
+            </button>
+          </div>
         </div>
       </details>
 
@@ -242,6 +522,10 @@
         <summary class="settings-details__summary"><span data-i18n="playKioskTitle">Play &amp; kiosk</span></summary>
         <div class="settings-details__inner">
           <p class="small" data-i18n="playKioskHelp">Same settings apply in normal play and ?kiosk=1. Cookies mirror the config when it fits browser limits.</p>
+          <label class="inline">
+            <input type="checkbox" id="defaultKiosk" checked />
+            <span data-i18n="defaultKioskLabel">Open in kiosk mode by default (?kiosk=1 when the URL has no kiosk flag)</span>
+          </label>
           <label class="inline">
             <input type="checkbox" id="restartOnSpace" />
             <span data-i18n="restartOnSpaceLabel">Restart run with Space (play screen; not while typing in a field)</span>
@@ -254,6 +538,11 @@
             <span data-i18n="kioskAutoRestartDelayLabel">Auto-restart delay (ms)</span>
             <input type="number" id="kioskAutoRestartDelayMs" min="800" max="120000" step="100" value="4000" />
           </label>
+          <div class="settings-section-actions">
+            <button type="button" class="btn-reset-section" data-reset-section="playKiosk" data-i18n="resetSectionDefaults">
+              Reset this section to defaults
+            </button>
+          </div>
         </div>
       </details>
 
@@ -277,6 +566,10 @@
             <span data-i18n="endScreenLinkText">Link label</span>
             <input type="text" id="endScreenDefeatLinkText" placeholder="" />
           </label>
+          <label class="inline">
+            <input type="checkbox" id="endScreenDefeatShowQr" checked />
+            <span data-i18n="endScreenShowQrLabel">Show QR code on final screen</span>
+          </label>
           <label class="block">
             <span data-i18n="endScreenQrUrl">QR code URL</span>
             <input type="url" id="endScreenDefeatQrUrl" placeholder="https://..." />
@@ -288,6 +581,11 @@
           </label>
           <div class="row-btns">
             <button type="button" id="btnClearEndScreenDefeatImage" data-i18n="clearEndScreenImage">Remove image</button>
+          </div>
+          <div class="settings-section-actions">
+            <button type="button" class="btn-reset-section" data-reset-section="defeat" data-i18n="resetSectionDefaults">
+              Reset this section to defaults
+            </button>
           </div>
         </div>
       </details>
@@ -312,6 +610,10 @@
             <span data-i18n="endScreenLinkText">Link label</span>
             <input type="text" id="endScreenVictoryLinkText" placeholder="" />
           </label>
+          <label class="inline">
+            <input type="checkbox" id="endScreenVictoryShowQr" checked />
+            <span data-i18n="endScreenShowQrLabel">Show QR code on final screen</span>
+          </label>
           <label class="block">
             <span data-i18n="endScreenQrUrl">QR code URL</span>
             <input type="url" id="endScreenVictoryQrUrl" placeholder="https://..." />
@@ -323,6 +625,11 @@
           </label>
           <div class="row-btns">
             <button type="button" id="btnClearEndScreenVictoryImage" data-i18n="clearEndScreenImage">Remove image</button>
+          </div>
+          <div class="settings-section-actions">
+            <button type="button" class="btn-reset-section" data-reset-section="victory" data-i18n="resetSectionDefaults">
+              Reset this section to defaults
+            </button>
           </div>
         </div>
       </details>
@@ -369,6 +676,11 @@
             <span data-i18n="swipeMinDistance">Swipe minimum distance (px)</span>
             <input type="number" id="swipeMinDistance" min="24" max="200" step="4" value="48" />
           </label>
+          <div class="settings-section-actions">
+            <button type="button" class="btn-reset-section" data-reset-section="appearance" data-i18n="resetSectionDefaults">
+              Reset this section to defaults
+            </button>
+          </div>
         </div>
       </details>
 
@@ -447,11 +759,247 @@
     </section>
 
     <footer class="footer">
-      <p class="small footer__legal" data-i18n="footerLegal"></p>
-      <p class="small" data-i18n="footerNote"></p>
-      <p class="small footer__cookies" data-i18n="footerCookies"></p>
-      <p class="small footer__wikiquote" data-i18n="footerWikiquote"></p>
+      <p class="footer__tagline" data-i18n="footerTagline"></p>
+      <button type="button" class="footer__credits-btn" id="btnCredits" data-i18n="creditsOpenButton"></button>
     </footer>
+
+    <div id="creditsModal" class="credits-modal" hidden>
+      <div class="credits-modal__backdrop" id="creditsModalBackdrop" aria-hidden="true"></div>
+      <div
+        class="credits-modal__panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="creditsModalTitleText"
+      >
+        <h2 id="creditsModalTitleText" class="credits-modal__title" data-i18n="creditsModalTitle"></h2>
+        <div class="credits-modal__scroll">
+          <div class="credits-modal__lang" data-credits-lang="en">
+            <section class="credits-section">
+              <h3 class="credits-section__title">Fan project</h3>
+              <p>
+                <em>Helldivers 2</em> and related trademarks belong to Arrowhead Game Studios and Sony Interactive
+                Entertainment. This app is a non-commercial fan work and is not affiliated with or endorsed by them.
+              </p>
+            </section>
+            <section class="credits-section">
+              <h3 class="credits-section__title">Code &amp; libraries</h3>
+              <ul>
+                <li>
+                  <strong>qrcode</strong> (MIT) — QR generation on the final screen.
+                  <a href="https://www.npmjs.com/package/qrcode" target="_blank" rel="noopener noreferrer">npm</a>
+                </li>
+                <li>
+                  <strong>Howler.js</strong> v2.2.4 (MIT) — classic mode audio.
+                  <a href="https://howlerjs.com/" target="_blank" rel="noopener noreferrer">howlerjs.com</a>
+                </li>
+              </ul>
+            </section>
+            <section class="credits-section">
+              <h3 class="credits-section__title">Icons &amp; reference UI</h3>
+              <ul>
+                <li>
+                  Stratagem permit-style SVGs, <code>super_earth.svg</code>, and kiosk timer behaviour inspired by
+                  <a href="https://github.com/drizzer14/stratagem-hero" target="_blank" rel="noopener noreferrer"
+                    >drizzer14/stratagem-hero</a
+                  >
+                  (MIT). Gameplay here differs.
+                </li>
+              </ul>
+            </section>
+            <section class="credits-section">
+              <h3 class="credits-section__title">Fonts</h3>
+              <ul>
+                <li><code>automaton.otf</code> — Automaton-style face (user-supplied; rights with respective owners).</li>
+                <li>
+                  <code>Hd2_illuminati-Regular.otf</code> — Illuminate-style face (user-supplied; rights with respective
+                  owners).
+                </li>
+              </ul>
+            </section>
+            <section class="credits-section">
+              <h3 class="credits-section__title">Branding images</h3>
+              <ul>
+                <li>
+                  Logo (WebP), favicon / HUD skull (PNG) under <code>assets/images/branding/</code> — from stratagemhero.com
+                  branding (vendored locally).
+                </li>
+              </ul>
+            </section>
+            <section class="credits-section">
+              <h3 class="credits-section__title">Direction arrows</h3>
+              <p>
+                SVG chevrons in <code>assets/images/arrows/</code> — sourced via
+                <a href="https://namu.wiki/" target="_blank" rel="noopener noreferrer">Namu Wiki</a> (i.namu.wiki); rights
+                remain with the respective owners.
+              </p>
+            </section>
+            <section class="credits-section">
+              <h3 class="credits-section__title">Classic mode audio</h3>
+              <p>
+                MP3s in <code>assets/audio/classic/</code> — same filenames as stratagemhero.com; stored locally for
+                offline use.
+              </p>
+            </section>
+            <section class="credits-section">
+              <h3 class="credits-section__title">Loading lines</h3>
+              <p>
+                Ship-style lines paraphrase or quote Wikiquote — <em>Helldivers 2</em> (Ship TV, General Brasch, Helldiver
+                dialogue), <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer"
+                  >CC&nbsp;BY-SA</a
+                >.
+                <a href="https://en.wikiquote.org/wiki/Helldivers_2" target="_blank" rel="noopener noreferrer"
+                  >Wikiquote: Helldivers 2</a
+                >
+              </p>
+            </section>
+            <section class="credits-section">
+              <h3 class="credits-section__title">Patch backgrounds</h3>
+              <p>
+                JPEGs in <code>assets/backgrounds/patch-*.jpg</code> — original rasters for this project (not official
+                marketing art).
+              </p>
+            </section>
+          </div>
+          <div class="credits-modal__lang" data-credits-lang="ru" hidden>
+            <section class="credits-section">
+              <h3 class="credits-section__title">Фан-проект</h3>
+              <p>
+                <em>Helldivers 2</em> и связанные товарные знаки принадлежат Arrowhead Game Studios и Sony Interactive
+                Entertainment. Это приложение — некоммерческое фанатское произведение, не связанное с ними и не одобренное
+                ими.
+              </p>
+            </section>
+            <section class="credits-section">
+              <h3 class="credits-section__title">Код и библиотеки</h3>
+              <ul>
+                <li>
+                  <strong>qrcode</strong> (MIT) — генерация QR на финальном экране.
+                  <a href="https://www.npmjs.com/package/qrcode" target="_blank" rel="noopener noreferrer">npm</a>
+                </li>
+                <li>
+                  <strong>Howler.js</strong> v2.2.4 (MIT) — звук классического режима.
+                  <a href="https://howlerjs.com/" target="_blank" rel="noopener noreferrer">howlerjs.com</a>
+                </li>
+              </ul>
+            </section>
+            <section class="credits-section">
+              <h3 class="credits-section__title">Иконки и референс UI</h3>
+              <ul>
+                <li>
+                  SVG стратегем в духе permit, <code>super_earth.svg</code> и идея киоск-таймера —
+                  <a href="https://github.com/drizzer14/stratagem-hero" target="_blank" rel="noopener noreferrer"
+                    >drizzer14/stratagem-hero</a
+                  >
+                  (MIT). Геймплей здесь другой.
+                </li>
+              </ul>
+            </section>
+            <section class="credits-section">
+              <h3 class="credits-section__title">Шрифты</h3>
+              <ul>
+                <li><code>automaton.otf</code> — стиль Automaton (предоставлен пользователем; права у правообладателей).</li>
+                <li>
+                  <code>Hd2_illuminati-Regular.otf</code> — стиль Illuminate (предоставлен пользователем; права у
+                  правообладателей).
+                </li>
+              </ul>
+            </section>
+            <section class="credits-section">
+              <h3 class="credits-section__title">Фирменные изображения</h3>
+              <ul>
+                <li>
+                  Логотип (WebP), favicon / череп в HUD (PNG) в <code>assets/images/branding/</code> — с брендинга
+                  stratagemhero.com (локальная копия).
+                </li>
+              </ul>
+            </section>
+            <section class="credits-section">
+              <h3 class="credits-section__title">Стрелки направлений</h3>
+              <p>
+                SVG в <code>assets/images/arrows/</code> — источник через
+                <a href="https://namu.wiki/" target="_blank" rel="noopener noreferrer">Namu Wiki</a> (i.namu.wiki); права
+                у соответствующих владельцев.
+              </p>
+            </section>
+            <section class="credits-section">
+              <h3 class="credits-section__title">Аудио классического режима</h3>
+              <p>
+                MP3 в <code>assets/audio/classic/</code> — те же имена файлов, что на stratagemhero.com; хранятся локально
+                для офлайн-игры.
+              </p>
+            </section>
+            <section class="credits-section">
+              <h3 class="credits-section__title">Строки «загрузки»</h3>
+              <p>
+                Тексты по мотивам Wikiquote — <em>Helldivers 2</em> (Ship TV, General Brasch, диалоги дайвера),
+                <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer"
+                  >CC&nbsp;BY-SA</a
+                >.
+                <a href="https://en.wikiquote.org/wiki/Helldivers_2" target="_blank" rel="noopener noreferrer"
+                  >Wikiquote: Helldivers 2</a
+                >
+              </p>
+            </section>
+            <section class="credits-section">
+              <h3 class="credits-section__title">Фоны «патчей»</h3>
+              <p>
+                JPEG в <code>assets/backgrounds/patch-*.jpg</code> — оригинальные растры для этого проекта (не официальный
+                маркетинг).
+              </p>
+            </section>
+          </div>
+        </div>
+        <p class="credits-modal__hint small" data-i18n="creditsModalMaintenanceHint"></p>
+        <button type="button" id="creditsModalClose" class="credits-modal__btn" data-i18n="creditsClose"></button>
+      </div>
+    </div>
+
+    <!--
+      HELP MODAL — maintainers: when rules, invasions, General Brasch, kiosk, or other modifiers change,
+      update matching strings in i18n.js (keys helpSection*, helpInvasion*, helpModalFooterNote) for en and ru.
+    -->
+    <div id="helpRulesModal" class="credits-modal help-rules-modal" hidden>
+      <div class="credits-modal__backdrop" id="helpRulesModalBackdrop" aria-hidden="true"></div>
+      <div
+        class="credits-modal__panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="helpRulesModalTitleText"
+      >
+        <h2 id="helpRulesModalTitleText" class="credits-modal__title" data-i18n="helpModalTitle"></h2>
+        <div class="credits-modal__scroll">
+          <section class="credits-section">
+            <h3 class="credits-section__title" data-i18n="helpSectionClassicTitle"></h3>
+            <p class="credits-section__p" data-i18n="helpSectionClassicP1"></p>
+            <p class="credits-section__p" data-i18n="helpSectionClassicP2"></p>
+            <p class="credits-section__p" data-i18n="helpSectionClassicP3"></p>
+          </section>
+          <section class="credits-section">
+            <h3 class="credits-section__title" data-i18n="helpSectionInvasionsTitle"></h3>
+            <p class="credits-section__p" data-i18n="helpSectionInvasionsIntro"></p>
+            <ul class="help-rules-modal__list">
+              <li data-i18n="helpInvasionAutomaton"></li>
+              <li data-i18n="helpInvasionIlluminate"></li>
+              <li data-i18n="helpInvasionTerminid"></li>
+            </ul>
+          </section>
+          <section class="credits-section">
+            <h3 class="credits-section__title" data-i18n="helpSectionBraschTitle"></h3>
+            <p class="credits-section__p" data-i18n="helpSectionBraschBody"></p>
+          </section>
+          <section class="credits-section">
+            <h3 class="credits-section__title" data-i18n="helpSectionKioskTitle"></h3>
+            <p class="credits-section__p" data-i18n="helpSectionKioskBody"></p>
+          </section>
+          <section class="credits-section">
+            <h3 class="credits-section__title" data-i18n="helpSectionOtherTitle"></h3>
+            <p class="credits-section__p" data-i18n="helpSectionOtherBody"></p>
+          </section>
+        </div>
+        <p class="credits-modal__hint small help-rules-modal__maintainer-hint" data-i18n="helpModalFooterNote"></p>
+        <button type="button" id="helpRulesModalClose" class="credits-modal__btn" data-i18n="helpModalClose"></button>
+      </div>
+    </div>
   </div>
 
   <audio id="bgAudio" loop crossorigin="anonymous"></audio>
@@ -464,6 +1012,7 @@
   <script src="assets/vendor/howler.min.js"></script>
   <script src="classic-game.js"></script>
   <script src="assets/vendor/qrcode.min.js"></script>
+  <script src="settings.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
