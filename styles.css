@@ -492,6 +492,11 @@ html.automaton-takeover .hud-timer {
   color: var(--text);
 }
 
+html.automaton-takeover .classic-game,
+html.automaton-takeover .classic-game * {
+  font-family: "HD Automaton", "Segoe UI", system-ui, sans-serif !important;
+}
+
 .illuminate-watermark {
   position: absolute;
   left: 50%;
@@ -541,6 +546,14 @@ html.automaton-takeover .hud-timer {
 
 .illuminate-invasion-banner[hidden] {
   display: none !important;
+}
+
+.illuminate-invasion-banner[data-kind="automaton"] {
+  font-family: "HD Automaton", "Segoe UI", system-ui, sans-serif;
+  color: #ffd0c8;
+  border-color: rgba(210, 90, 76, 0.62);
+  background: linear-gradient(90deg, rgba(66, 20, 18, 0.93), rgba(43, 15, 13, 0.95));
+  box-shadow: 0 0 18px rgba(170, 70, 60, 0.4), inset 0 0 22px rgba(92, 26, 20, 0.35);
 }
 
 .illuminate-invasion-banner--blink {
@@ -722,6 +735,11 @@ html.illuminati-takeover .classic-game {
   box-shadow:
     0 8px 32px rgba(40, 30, 80, 0.55),
     0 0 0 1px rgba(120, 100, 220, 0.2);
+}
+
+html.illuminati-takeover .classic-game,
+html.illuminati-takeover .classic-game * {
+  font-family: "HD Illuminati", "Segoe UI", system-ui, sans-serif !important;
 }
 
 html.illuminati-takeover .classic-game__hud,

@@ -556,6 +556,8 @@
   let bindTarget = null;
   let editorSeq = [];
   let touchStart = null;
+  let invasionHotkeyBuffer = "";
+  let invasionHotkeyTs = 0;
   /** Last festival / kiosk mode used for «Start over». */
   let lastKioskPreset = "easy";
   let kioskModeDraftSeq = 1;
@@ -1004,6 +1006,7 @@
     }
     host.hidden = false;
     if (warning) {
+      banner.setAttribute("data-kind", warning.kind);
       banner.hidden = false;
       timer.hidden = true;
       banner.classList.add("illuminate-invasion-banner--blink");
@@ -1016,6 +1019,7 @@
             : "illuminateInvasionBannerText";
       banner.textContent = t(key).replace("{seconds}", String(sec));
     } else {
+      banner.setAttribute("data-kind", active.kind);
       banner.hidden = true;
       banner.classList.remove("illuminate-invasion-banner--blink");
       timer.hidden = false;
@@ -1140,6 +1144,58 @@
       if (kind === "illuminate") tryIlluminatiTakeoverAfterSuccess();
       else if (kind === "terminid") tryTerminidTakeoverAfterSuccess();
       else tryAutomatonTakeoverAfterSuccess();
+    }
+  }
+
+  function forceInvasion(kind) {
+    if (!run || !run.active) return;
+    const now = Date.now();
+    if (kind === "automaton") {
+      const inv = deepMerge(defaultConfig().classicInvasion, cfg.classicInvasion || {});
+      const dMin = Math.max(1000, Number(inv.durationMinMs) || 20000);
+      const dMax = Math.max(dMin, Number(inv.durationMaxMs) || 40000);
+      const warnLead = Math.max(0, Math.floor(Number(inv.warnLeadMs) || 0));
+      run.automatonWarnUntil = now + warnLead;
+      run.automatonUntil = run.automatonWarnUntil + dMin + Math.random() * (dMax - dMin);
+      run.illuminatiWarnUntil = null;
+      run.illuminatiUntil = null;
+      run.terminidWarnUntil = null;
+      run.terminidUntil = null;
+      syncIlluminatiTakeoverUi();
+      syncTerminidTakeoverUi();
+      syncAutomatonTakeoverUi();
+      return;
+    }
+    if (kind === "terminid") {
+      const inv = deepMerge(defaultConfig().classicTerminidInvasion, cfg.classicTerminidInvasion || {});
+      const dMin = Math.max(1000, Number(inv.durationMinMs) || 20000);
+      const dMax = Math.max(dMin, Number(inv.durationMaxMs) || 40000);
+      const warnLead = Math.max(0, Math.floor(Number(inv.warnLeadMs) || 0));
+      run.terminidWarnUntil = now + warnLead;
+      run.terminidUntil = run.terminidWarnUntil + dMin + Math.random() * (dMax - dMin);
+      run.automatonWarnUntil = null;
+      run.automatonUntil = null;
+      run.illuminatiWarnUntil = null;
+      run.illuminatiUntil = null;
+      syncAutomatonTakeoverUi();
+      syncIlluminatiTakeoverUi();
+      syncTerminidTakeoverUi();
+      return;
+    }
+    if (kind === "illuminate") {
+      const inv = deepMerge(defaultConfig().classicIlluminatiInvasion, cfg.classicIlluminatiInvasion || {});
+      const dMin = Math.max(1000, Number(inv.durationMinMs) || 20000);
+      const dMax = Math.max(dMin, Number(inv.durationMaxMs) || 40000);
+      const warnLead = Math.max(0, Math.floor(Number(inv.warnLeadMs) || 5000));
+      run.illuminatiWarnUntil = now + warnLead;
+      run.illuminatiUntil = run.illuminatiWarnUntil + dMin + Math.random() * (dMax - dMin);
+      run.automatonWarnUntil = null;
+      run.automatonUntil = null;
+      run.terminidWarnUntil = null;
+      run.terminidUntil = null;
+      syncAutomatonTakeoverUi();
+      syncTerminidTakeoverUi();
+      syncIlluminatiTakeoverUi();
     }
   }
 
@@ -2552,6 +2608,26 @@
       renderBindings();
       saveConfig(cfg);
       return;
+    }
+    const activeEl = document.activeElement;
+    const activeTag = activeEl && activeEl.tagName;
+    const typingNow =
+      activeTag === "INPUT" || activeTag === "TEXTAREA" || activeTag === "SELECT" || activeEl?.isContentEditable;
+    if (!typingNow && e.key && /^[a-z]$/i.test(e.key)) {
+      const now = Date.now();
+      if (now - invasionHotkeyTs > 1200) invasionHotkeyBuffer = "";
+      invasionHotkeyTs = now;
+      invasionHotkeyBuffer = (invasionHotkeyBuffer + e.key.toLowerCase()).slice(-3);
+      if (invasionHotkeyBuffer === "iii") {
+        forceInvasion("automaton");
+        invasionHotkeyBuffer = "";
+      } else if (invasionHotkeyBuffer === "kkk") {
+        forceInvasion("terminid");
+        invasionHotkeyBuffer = "";
+      } else if (invasionHotkeyBuffer === "mmm") {
+        forceInvasion("illuminate");
+        invasionHotkeyBuffer = "";
+      }
     }
 
     if (modal && !modal.hidden && (e.code === "Enter" || e.code === "Space")) {
