@@ -55,6 +55,8 @@
   let els = {};
   let howls = null;
   let playAudio = true;
+  /** Mirrors app cfg.directionSoundsMuted — short Howler SFX (not loop music / anthem). */
+  let directionSfxMuted = false;
 
   let active = false;
   let screen = "start";
@@ -81,18 +83,250 @@
   let tFn = (k) => k;
   let loopTimer = null;
   let sessionDeadline = null;
+  /** Wall-clock session window length (ms), for mode-limit bar; set when sessionDeadline is set. */
+  let sessionTotalMs = 0;
+
+  /** Completed stratagems this run (classic); every N → General Brasch. */
+  let completedStratagemCount = 0;
+  /** `Date.now()` until which round timer is frozen and Brasch UI is active. */
+  let braschModeUntil = 0;
+  let anthemHowl = null;
+
+  function getBraschCfg() {
+    const d = {
+      enabled: true,
+      everyNStratagems: 50,
+      durationMs: 10000,
+      anthemUrl: "",
+      portraitUrl: "",
+    };
+    if (!deps || typeof deps.getGeneralBraschConfig !== "function") return d;
+    const c = deps.getGeneralBraschConfig() || {};
+    return {
+      enabled: c.enabled !== false,
+      everyNStratagems: Math.max(1, Math.floor(Number(c.everyNStratagems)) || 50),
+      durationMs: Math.max(1000, Math.floor(Number(c.durationMs)) || 10000),
+      anthemUrl: String(c.anthemUrl || "").trim(),
+      portraitUrl: String(c.portraitUrl || "").trim(),
+    };
+  }
+
+  function anthemStillPlaying() {
+    return !!(anthemHowl && typeof anthemHowl.playing === "function" && anthemHowl.playing());
+  }
+
+  /** UI/timer freeze: minimum burst length OR until anthem finishes (no early cut). */
+  function isBraschActive() {
+    if (Date.now() < braschModeUntil) return true;
+    return anthemStillPlaying();
+  }
+
+  function roundTimerPaused() {
+    return freezeTimer || isBraschActive();
+  }
+
+  function stopAnthem() {
+    if (!anthemHowl) return;
+    try {
+      anthemHowl.stop();
+      anthemHowl.unload();
+    } catch {
+      /* ignore */
+    }
+    anthemHowl = null;
+  }
+
+  function resumeRoundMusicAfterBrasch() {
+    if (screen === "in_game" && playAudio && howls && howls.game_music) {
+      try {
+        howls.game_music.play();
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
+  /**
+   * @param {boolean} resumeGameMusic — if true, fade back to round music after anthem ends (or now if no anthem).
+   * @param {boolean} forceStopAnthem — when true, stop the anthem immediately (e.g. leaving the round).
+   */
+  function endBraschMode(resumeGameMusic, forceStopAnthem) {
+    if (root) root.classList.remove("classic-game--brasch");
+    if (els.timerFill) els.timerFill.classList.remove("classic-timer__fill--brasch");
+    if (els.braschPortraitWrap) els.braschPortraitWrap.hidden = true;
+
+    if (forceStopAnthem) {
+      stopAnthem();
+      return;
+    }
+
+    if (!resumeGameMusic) {
+      stopAnthem();
+      return;
+    }
+
+    if (anthemStillPlaying()) {
+      const onAnthemEnd = () => {
+        try {
+          anthemHowl.off("end", onAnthemEnd);
+        } catch {
+          /* ignore */
+        }
+        stopAnthem();
+        resumeRoundMusicAfterBrasch();
+      };
+      try {
+        anthemHowl.on("end", onAnthemEnd);
+      } catch {
+        stopAnthem();
+        resumeRoundMusicAfterBrasch();
+      }
+      return;
+    }
+
+    stopAnthem();
+    resumeRoundMusicAfterBrasch();
+  }
+
+  function clearBraschLeavingPlay() {
+    braschModeUntil = 0;
+    endBraschMode(false, true);
+  }
+
+  function playAnthem(url) {
+    const u = (url || "").trim();
+    if (!u || typeof Howl === "undefined") return;
+    ensureHowls();
+    stopAnthem();
+    const vol = typeof Howler !== "undefined" ? Howler.volume() : 0.82;
+    const src = /\s/.test(u) ? encodeURI(u) : u;
+    anthemHowl = new Howl({ src: [src], html5: true, volume: vol, loop: false });
+    try {
+      anthemHowl.on("loaderror", () => {
+        try {
+          anthemHowl.unload();
+        } catch {
+          /* ignore */
+        }
+        anthemHowl = null;
+      });
+    } catch {
+      /* ignore */
+    }
+    try {
+      anthemHowl.play();
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function syncBraschPortrait(bc) {
+    const wrap = els.braschPortraitWrap;
+    const img = els.braschPortrait;
+    if (!wrap || !img) return;
+    const src = (bc && bc.portraitUrl) || "";
+    if (!src.trim()) {
+      wrap.hidden = true;
+      img.removeAttribute("src");
+      return;
+    }
+    img.src = /\s/.test(src) ? encodeURI(src.trim()) : src.trim();
+    img.alt = typeof tFn === "function" ? tFn("classicBraschPortraitAlt") : "General Brasch";
+    wrap.hidden = false;
+  }
+
+  function startBraschMode(bc) {
+    if (!bc || !bc.enabled || !active || screen !== "in_game") return;
+    braschModeUntil = Date.now() + bc.durationMs;
+    if (root) root.classList.add("classic-game--brasch");
+    stopMusic();
+    playAnthem(bc.anthemUrl);
+    syncBraschPortrait(bc);
+    updateTimerLabel();
+  }
+
+  function updateComboHud() {
+    const wrap = els.comboWrap;
+    if (!wrap) return;
+    const bc = getBraschCfg();
+    if (!bc.enabled || !active || screen !== "in_game") {
+      wrap.hidden = true;
+      return;
+    }
+    wrap.hidden = false;
+    const goal = bc.everyNStratagems;
+    const n = completedStratagemCount % goal;
+    if (els.comboHud) {
+      els.comboHud.textContent =
+        typeof tFn === "function"
+          ? tFn("classicComboHud").replace("{n}", String(n)).replace("{goal}", String(goal))
+          : `${n} / ${goal}`;
+    }
+  }
+
+  function formatModeTimeLeft(ms) {
+    const x = Math.max(0, ms);
+    if (x >= 60000) {
+      const s = Math.ceil(x / 1000);
+      const m = Math.floor(s / 60);
+      const r = s % 60;
+      return `${m}:${String(r).padStart(2, "0")}`;
+    }
+    return `${(x / 1000).toFixed(1)}s`;
+  }
+
+  function updateSessionTimerDisplay() {
+    const panel = els.modeTimerPanel;
+    if (!panel) return;
+    if (sessionDeadline == null) {
+      panel.hidden = true;
+      return;
+    }
+    panel.hidden = false;
+    const remain = Math.max(0, sessionDeadline - Date.now());
+    const denom = Math.max(1, sessionTotalMs);
+    const pct = (remain / denom) * 100;
+    if (els.modeTimerFill) {
+      els.modeTimerFill.style.width = `${Math.max(0, Math.min(100, pct))}%`;
+      if (pct <= TIME_WARNING) els.modeTimerFill.classList.add("classic-timer__fill--warn");
+      else els.modeTimerFill.classList.remove("classic-timer__fill--warn");
+    }
+    if (els.modeTimerText) els.modeTimerText.textContent = formatModeTimeLeft(remain);
+    if (els.modeTimerBar) {
+      els.modeTimerBar.setAttribute("aria-valuenow", String(Math.round(Math.max(0, Math.min(100, pct)))));
+      els.modeTimerBar.setAttribute(
+        "aria-label",
+        typeof tFn === "function"
+          ? tFn("classicModeTimerAria").replace("{time}", formatModeTimeLeft(remain))
+          : `Mode limit: ${formatModeTimeLeft(remain)} left`
+      );
+    }
+  }
+
+  function illuminatiRtl() {
+    return !!(deps && typeof deps.getIlluminateRtlInput === "function" && deps.getIlluminateRtlInput());
+  }
+
+  function sequenceExpectedForInput() {
+    if (!sequenceCurrent) return "";
+    return illuminatiRtl()
+      ? sequenceCurrent.split("").reverse().join("")
+      : sequenceCurrent;
+  }
 
   function processLetterInput(L) {
     if (!L || screen !== "in_game") return;
     userInput += L;
     const row = els.seqRow;
     if (!row) return;
+    const expectStr = sequenceExpectedForInput();
+    const rtl = illuminatiRtl();
     let bad = false;
     for (let a = 0; a < userInput.length; a++) {
-      if (sequenceCurrent[a] !== userInput[a]) {
+      if (expectStr[a] !== userInput[a]) {
         bad = true;
         if (failOnWrong) {
-          wrongSequence();
+          wrongSequence(true);
           stopMusic();
           onGameOver("wrong");
           return;
@@ -100,7 +334,8 @@
         wrongSequence();
         break;
       }
-      const cell = row.children[a];
+      const cellIdx = rtl ? sequenceCurrent.length - 1 - a : a;
+      const cell = row.children[cellIdx];
       if (cell) cell.classList.add("classic-arrow--correct");
     }
     if (!bad && userInput.length > 0) playSfx("button_press");
@@ -124,6 +359,11 @@
   function setVolume01(v) {
     const x = Math.max(0, Math.min(1, Number(v) || 0));
     if (typeof Howler !== "undefined") Howler.volume(x);
+    if (anthemHowl) try {
+      anthemHowl.volume(x);
+    } catch {
+      /* ignore */
+    }
     updateVolumeIcon(x);
     if (deps && typeof deps.onVolumeChange === "function") deps.onVolumeChange(x);
   }
@@ -135,7 +375,7 @@
   }
 
   function playSfx(name) {
-    if (!playAudio || !howls || !howls[name]) return;
+    if (directionSfxMuted || !playAudio || !howls || !howls[name]) return;
     try {
       howls[name].play();
     } catch {
@@ -151,7 +391,7 @@
     }
   }
 
-  function wrongSequence() {
+  function wrongSequence(suppressLivesHook) {
     sequencePerfect = false;
     userInput = "";
     const row = els.seqRow;
@@ -177,6 +417,61 @@
       if (row) row.style.animation = "";
     }, 240);
     playSfx("button_press_error");
+    if (!suppressLivesHook && deps && typeof deps.onClassicWrong === "function") deps.onClassicWrong();
+  }
+
+  function resetCurrentSequenceProgress() {
+    userInput = "";
+    const row = els.seqRow;
+    if (row) {
+      row.querySelectorAll(".classic-arrow--correct").forEach((n) => n.classList.remove("classic-arrow--correct"));
+    }
+  }
+
+  function updateTimerLabel() {
+    if (!els.timerText) return;
+    if (isBraschActive()) {
+      els.timerText.textContent = typeof tFn === "function" ? tFn("classicTimerBrasch") : "GENERAL BRASCH";
+      if (els.timerFill) {
+        els.timerFill.style.width = "100%";
+        els.timerFill.classList.remove("classic-timer__fill--warn");
+        els.timerFill.classList.add("classic-timer__fill--brasch");
+      }
+      if (els.timerBar) {
+        els.timerBar.setAttribute("aria-valuenow", "100");
+        els.timerBar.setAttribute(
+          "aria-label",
+          typeof tFn === "function" ? tFn("classicTimerAriaBrasch") : "General Brasch: round timer paused"
+        );
+      }
+      return;
+    }
+    if (freezeTimer) {
+      els.timerText.textContent = typeof tFn === "function" ? tFn("classicTimerFrozen") : "∞";
+      if (els.timerFill) {
+        els.timerFill.style.width = "100%";
+        els.timerFill.classList.remove("classic-timer__fill--warn", "classic-timer__fill--brasch");
+      }
+      if (els.timerBar) {
+        els.timerBar.setAttribute("aria-valuenow", "100");
+        els.timerBar.setAttribute(
+          "aria-label",
+          typeof tFn === "function" ? tFn("classicTimerAriaFrozen") : "Timer paused"
+        );
+      }
+      return;
+    }
+    const s = Math.max(0, timeLeft) / 1000;
+    els.timerText.textContent = `${s.toFixed(1)}s`;
+    if (els.timerFill) els.timerFill.classList.remove("classic-timer__fill--brasch");
+    if (els.timerBar) {
+      els.timerBar.setAttribute(
+        "aria-label",
+        typeof tFn === "function"
+          ? tFn("classicTimerAriaPressure").replace("{seconds}", s.toFixed(1))
+          : `Time left ${s.toFixed(1)} seconds`
+      );
+    }
   }
 
   function buildQueue() {
@@ -263,6 +558,9 @@
       r.style.display = i === 0 ? "flex" : "none";
     });
     els.seqRow = sequenceRows[0] || null;
+    if (screen === "in_game" && deps && typeof deps.onClassicActiveStratagemChanged === "function") {
+      deps.onClassicActiveStratagemChanged();
+    }
   }
 
   function removeActiveStratagem() {
@@ -294,6 +592,8 @@
       if (n) n.hidden = true;
     });
     if (map[name]) map[name].hidden = false;
+    if (name !== "in_game") clearBraschLeavingPlay();
+    if (name === "in_game") updateComboHud();
     if (deps && typeof deps.onScreenChange === "function") deps.onScreenChange(name);
   }
 
@@ -352,6 +652,7 @@
     timeGameOver = TIME_GAME_OVER;
     if (els.goScore) els.goScore.textContent = String(score);
     if (els.goRestart) els.goRestart.hidden = true;
+    if (els.btnRestart) els.btnRestart.hidden = true;
     showScreen("game_over");
     stopMusic();
     playSfx("game_over");
@@ -385,36 +686,72 @@
     timeGameOver -= GAME_TICK;
     if (timeGameOver <= 0) {
       if (els.goRestart) els.goRestart.hidden = false;
+      if (els.btnRestart) els.btnRestart.hidden = false;
     }
   }
 
   function loopInGame() {
+    if (!isBraschActive() && root && root.classList.contains("classic-game--brasch")) {
+      endBraschMode(true, false);
+    }
+
     if (sessionDeadline != null && Date.now() >= sessionDeadline) {
+      clearBraschLeavingPlay();
       stopMusic();
       onGameOver("session");
       return;
     }
-    if (!freezeTimer && timeLeft > 0) timeLeft -= GAME_TICK;
-    const pct = timeTotalCap > 0 ? (timeLeft / timeTotalCap) * 100 : 100;
+    const rtPaused = roundTimerPaused();
+    if (!rtPaused && timeLeft > 0) timeLeft -= GAME_TICK;
+    const pct = rtPaused
+      ? 100
+      : timeTotalCap > 0
+        ? (timeLeft / timeTotalCap) * 100
+        : 100;
     if (els.timerFill) {
       els.timerFill.style.width = `${Math.max(0, Math.min(100, pct))}%`;
-      if (pct <= TIME_WARNING) els.timerFill.classList.add("classic-timer__fill--warn");
+      if (isBraschActive()) {
+        els.timerFill.classList.add("classic-timer__fill--brasch");
+        els.timerFill.classList.remove("classic-timer__fill--warn");
+      } else if (!freezeTimer && pct <= TIME_WARNING) els.timerFill.classList.add("classic-timer__fill--warn");
       else els.timerFill.classList.remove("classic-timer__fill--warn");
     }
+    updateTimerLabel();
+    if (els.timerBar) {
+      els.timerBar.setAttribute("aria-valuenow", String(Math.round(Math.max(0, Math.min(100, pct)))));
+    }
 
-    if (timeLeft <= 0) {
+    if (timeLeft <= 0 && !rtPaused) {
+      if (deps && typeof deps.onRoundTimerZero === "function" && deps.onRoundTimerZero()) {
+        updateTimerLabel();
+        return;
+      }
+      clearBraschLeavingPlay();
       stopMusic();
       onGameOver("time");
       return;
     }
 
-    if (userInput === sequenceCurrent && sequenceCurrent.length > 0) {
+    if (userInput === sequenceExpectedForInput() && sequenceCurrent.length > 0) {
+      if (deps && typeof deps.onClassicStratCompleted === "function") deps.onClassicStratCompleted();
       score += 5 * sequenceCurrent.length;
       if (els.infoScore) els.infoScore.textContent = String(score);
       timeLeft = Math.min(timeTotalCap, timeLeft + TIME_BONUS);
       playSfx("sequence_success");
       removeActiveStratagem();
-      if (queue.length === 0) {
+      completedStratagemCount += 1;
+      updateComboHud();
+      const roundJustEnded = queue.length === 0;
+      const bc = getBraschCfg();
+      if (
+        !roundJustEnded &&
+        bc.enabled &&
+        completedStratagemCount > 0 &&
+        completedStratagemCount % bc.everyNStratagems === 0
+      ) {
+        startBraschMode(bc);
+      }
+      if (roundJustEnded) {
         stopMusic();
         onRoundOver();
       }
@@ -441,6 +778,8 @@
         break;
     }
     loopTimer = setTimeout(gameLoop, GAME_TICK);
+    if (active && sessionDeadline != null) updateSessionTimerDisplay();
+    if (active && deps && typeof deps.onAfterTick === "function") deps.onAfterTick(screen);
   }
 
   function ensureLoop() {
@@ -474,6 +813,8 @@
 
   function startInternal() {
     if (deps && typeof deps.onStart === "function") deps.onStart();
+    completedStratagemCount = 0;
+    clearBraschLeavingPlay();
     score = 0;
     round = 0;
     timeLeft = timeTotalCap;
@@ -481,6 +822,7 @@
     clearQueueUi();
     if (els.infoScore) els.infoScore.textContent = "0";
     if (els.goRestart) els.goRestart.hidden = true;
+    if (els.btnRestart) els.btnRestart.hidden = true;
     onRoundStarting();
   }
 
@@ -504,6 +846,12 @@
         activeName: root.querySelector("#classicActiveName"),
         seqHost: root.querySelector("#classicSeqHost"),
         timerFill: root.querySelector("#classicTimerFill"),
+        timerText: root.querySelector("#classicTimerText"),
+        timerBar: root.querySelector("#classicTimerBar"),
+        modeTimerPanel: root.querySelector("#classicModeTimerPanel"),
+        modeTimerFill: root.querySelector("#classicModeTimerFill"),
+        modeTimerText: root.querySelector("#classicModeTimerText"),
+        modeTimerBar: root.querySelector("#classicModeTimerBar"),
         infoRound: root.querySelector("#classicInfoRound"),
         infoScore: root.querySelector("#classicInfoScore"),
         roRoundBonus: root.querySelector("#classicRoRoundBonus"),
@@ -515,8 +863,14 @@
         roTotal: root.querySelector("#classicRoTotal"),
         goScore: root.querySelector("#classicGoScore"),
         goRestart: root.querySelector("#classicGoRestart"),
+        btnStart: root.querySelector("#classicBtnStart"),
+        btnRestart: root.querySelector("#classicBtnRestart"),
         glitch: root.querySelector("#classicGlitch"),
         touchPad: root.querySelector("#classicTouchPad"),
+        comboWrap: root.querySelector("#classicComboWrap"),
+        comboHud: root.querySelector("#classicComboHud"),
+        braschPortraitWrap: root.querySelector("#classicBraschPortraitWrap"),
+        braschPortrait: root.querySelector("#classicBraschPortrait"),
       };
       ensureHowls();
       const v0 = typeof options.initialVolume === "number" ? options.initialVolume : 0.82;
@@ -538,6 +892,17 @@
           });
         });
       }
+
+      function tryStartFromTouchUi() {
+        if (!active) return;
+        if (screen === "start") {
+          startInternal();
+          return;
+        }
+        if (screen === "game_over" && timeGameOver <= 0) startInternal();
+      }
+      if (els.btnStart) els.btnStart.addEventListener("click", tryStartFromTouchUi);
+      if (els.btnRestart) els.btnRestart.addEventListener("click", tryStartFromTouchUi);
     },
 
     applyTouchLetter(L) {
@@ -558,10 +923,13 @@
       failOnWrong = !!opts.failOnWrong;
       playAudio = opts.playAudio !== false;
       sessionDeadline = opts.sessionDeadline != null ? Number(opts.sessionDeadline) : null;
+      sessionTotalMs =
+        sessionDeadline != null ? Math.max(1, Math.round(sessionDeadline - Date.now())) : 0;
       active = true;
       root.hidden = false;
       showScreen("start");
       if (els.goRestart) els.goRestart.hidden = true;
+      if (els.btnRestart) els.btnRestart.hidden = true;
       ensureLoop();
     },
 
@@ -569,6 +937,7 @@
       active = false;
       if (loopTimer) clearTimeout(loopTimer);
       loopTimer = null;
+      clearBraschLeavingPlay();
       stopMusic();
       root.hidden = true;
       deps.onStop && deps.onStop();
@@ -587,8 +956,27 @@
     },
 
     setVolume01: setVolume01,
+    setDirectionSfxMuted(muted) {
+      directionSfxMuted = !!muted;
+    },
     getVolume01() {
       return typeof Howler !== "undefined" ? Howler.volume() : 0.82;
+    },
+
+    getScore() {
+      return score;
+    },
+
+    getSessionDeadline() {
+      return sessionDeadline;
+    },
+
+    refillRoundTimerAfterLifeLost() {
+      if (!active || screen !== "in_game") return;
+      timeLeft = timeTotalCap;
+      sequencePerfect = false;
+      resetCurrentSequenceProgress();
+      updateTimerLabel();
     },
   };
 

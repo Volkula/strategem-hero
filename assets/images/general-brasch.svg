@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 400" role="img" aria-label="General Brasch placeholder">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1040"/>
+      <stop offset="100%" style="stop-color:#0a1830"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffe88a"/>
+      <stop offset="100%" style="stop-color:#c9a227"/>
+    </linearGradient>
+  </defs>
+  <rect width="320" height="400" fill="url(#bg)"/>
+  <ellipse cx="160" cy="118" rx="72" ry="88" fill="#2a2848" stroke="url(#gold)" stroke-width="3"/>
+  <rect x="88" y="210" width="144" height="160" rx="8" fill="#222038" stroke="url(#gold)" stroke-width="2"/>
+  <path d="M160 32 L175 72 L220 78 L188 108 L198 152 L160 128 L122 152 L132 108 L100 78 L145 72 Z" fill="url(#gold)" opacity="0.9"/>
+  <text x="160" y="360" text-anchor="middle" fill="#d4c4ff" font-family="Segoe UI,system-ui,sans-serif" font-size="14" font-weight="700" letter-spacing="0.2em">GENERAL BRASCH</text>
+  <text x="160" y="382" text-anchor="middle" fill="#8890b0" font-family="Segoe UI,system-ui,sans-serif" font-size="10">Replace with portrait (see wiki)</text>
+</svg>

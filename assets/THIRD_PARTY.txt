@@ -1,3 +1,8 @@
+Player-facing copy also lives in the Credits modal in index.html (EN/RU).
+When you add or change third-party assets, update both this file and that modal.
+
+---
+
 helldivers-loading-lines.js — Short in-universe style lines paraphrased or
 quoted from Wikiquote, “Helldivers 2” (Ship TV, General Brasch, Helldiver
 dialogue sections). Wikiquote text is CC-BY-SA:
@@ -5,6 +10,16 @@ https://en.wikiquote.org/wiki/Helldivers_2
 
 assets/vendor/qrcode.min.js — QR code generation from the npm package
 “qrcode” (MIT): https://www.npmjs.com/package/qrcode
+
+assets/audio/helldivers_2_12. Super Earth National Anthem.mp3 — if present,
+used as the default “General Brasch” burst anthem; rights remain with the
+respective rights holders (game OST / publisher). Ship only if your use is
+lawful in your jurisdiction.
+
+assets/images/general-brasch.svg — project placeholder for the Brasch portrait
+slot during classic “General Brasch” mode. Replace with your own image if you
+like (e.g. personal-use reference from the Helldivers wiki:
+https://helldivers.fandom.com/wiki/General_Brasch ).
 
 Stratagem permit-style SVG icons in assets/images/stratagems/ are from
 https://github.com/drizzer14/stratagem-hero (MIT License).
@@ -20,6 +35,13 @@ Replace these files locally if you want different imagery.
 assets/fonts/automaton.otf — Automaton-typeface font supplied by the user for
 Cyberstan / Automaton-themed UI moments (rights remain with the respective
 owners).
+
+assets/fonts/Hd2_illuminati-Regular.otf — Illuminate / Illuminati-style font
+for parallel “Illuminate invasion” UI moments (rights remain with the
+respective owners).
+
+assets/images/myst.png — spore / fog texture for classic “Terminid invasion”
+overlay (project asset; replace or retexture locally if you prefer).
 
 Header / in-game logo (WebP) and favicon / HUD skull (PNG) are vendored under
 assets/images/branding/ (originally from stratagemhero.com branding):

@@ -1219,6 +1219,9 @@
     }
     const cb = el("directionSoundsMutedCheck");
     if (cb) cb.checked = muted;
+    if (typeof ClassicStratagemHero !== "undefined" && ClassicStratagemHero.setDirectionSfxMuted) {
+      ClassicStratagemHero.setDirectionSfxMuted(muted);
+    }
   }
 
   function syncCreditsModalLocale() {
