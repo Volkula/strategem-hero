@@ -133,6 +133,12 @@
     if (typeof ClassicStratagemHero !== "undefined" && ClassicStratagemHero.setVolume01) {
       const v = Number(cfg.sfxVolume);
       ClassicStratagemHero.setVolume01(Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0.82);
+      const gb = deepMerge(defaultConfig().generalBrasch, cfg.generalBrasch || {});
+      if (ClassicStratagemHero.setBraschAnthemVolume01) {
+        ClassicStratagemHero.setBraschAnthemVolume01(
+          Number.isFinite(Number(gb.anthemVolume)) ? Math.max(0, Math.min(1, Number(gb.anthemVolume))) : 1
+        );
+      }
     }
     if (!isKioskMode()) ensureClassicAttractMode();
   }
@@ -372,6 +378,10 @@
       case "generalBraschAnthemUrl":
         cfg.generalBrasch = cfg.generalBrasch || { ...d.generalBrasch };
         cfg.generalBrasch.anthemUrl = d.generalBrasch.anthemUrl;
+        break;
+      case "generalBraschAnthemVolume":
+        cfg.generalBrasch = cfg.generalBrasch || { ...d.generalBrasch };
+        cfg.generalBrasch.anthemVolume = d.generalBrasch.anthemVolume;
         break;
       case "generalBraschPortraitUrl":
         cfg.generalBrasch = cfg.generalBrasch || { ...d.generalBrasch };
@@ -1023,12 +1033,25 @@
     });
   }
 
+  function getSolvedStratagemCount() {
+    if (
+      typeof ClassicStratagemHero !== "undefined" &&
+      ClassicStratagemHero.isActive &&
+      ClassicStratagemHero.isActive() &&
+      ClassicStratagemHero.getCompletedStratagemCount
+    ) {
+      return Math.max(0, Math.floor(Number(ClassicStratagemHero.getCompletedStratagemCount()) || 0));
+    }
+    return Math.max(0, Math.floor(Number(run && run.solvedStratagems) || 0));
+  }
+
   /**
    * @param {"defeat"|"victory"} kind
    * @param {number} score
+   * @param {number} solvedStratagems
    * @param {{ title?: string, message?: string } | null} fallbacks — i18n strings; message may contain {score}
    */
-  function showFinalScreenModal(kind, score, fallbacks) {
+  function showFinalScreenModal(kind, score, solvedStratagems, fallbacks) {
     const modal = el("gameOverModal");
     if (!modal) return;
     const cfgKey = kind === "victory" ? "endScreenVictory" : "endScreenDefeat";
@@ -1050,7 +1073,11 @@
     }
 
     el("gameOverTitleText").textContent = title;
-    el("gameOverMessageText").textContent = msg;
+    const solvedLine = t("finalScreenSolvedLine").replace(
+      "{count}",
+      String(Math.max(0, Math.floor(Number(solvedStratagems) || 0)))
+    );
+    el("gameOverMessageText").textContent = `${msg} ${solvedLine}`;
 
     const imgEl = el("gameOverImage");
     const data = (es.imageDataUrl || "").trim();
@@ -1112,17 +1139,17 @@
     applyGlobalBackgrounds();
     el("playHint").textContent = t("kioskPickMode");
     if (kind === "lottery") {
-      showFinalScreenModal("defeat", score, {
+      showFinalScreenModal("defeat", score, getSolvedStratagemCount(), {
         title: t("kioskLotteryEndTitle"),
         message: t("kioskLotteryEndMsg"),
       });
     } else if (kind === "marathon") {
-      showFinalScreenModal("victory", score, {
+      showFinalScreenModal("victory", score, getSolvedStratagemCount(), {
         title: t("kioskMarathonEndTitle"),
         message: t("kioskTimedEndMsg"),
       });
     } else {
-      showFinalScreenModal("victory", score, {
+      showFinalScreenModal("victory", score, getSolvedStratagemCount(), {
         title: t("kioskSprintEndTitle"),
         message: t("kioskTimedEndMsg"),
       });
@@ -1145,7 +1172,7 @@
     setStratagemIcon(null);
     applyGlobalBackgrounds();
     el("playHint").textContent = t("kioskPickMode");
-    showFinalScreenModal("defeat", score, {
+    showFinalScreenModal("defeat", score, getSolvedStratagemCount(), {
       title: t("kioskPressureEndTitle"),
       message: t("kioskPressureEndMsg"),
     });
@@ -1523,7 +1550,7 @@
     const preset = lastKioskPreset;
     if (preset === "lottery" && (reason === "wrong" || reason === "time")) {
       ClassicStratagemHero.stop();
-      showFinalScreenModal("defeat", finalScore, {
+      showFinalScreenModal("defeat", finalScore, getSolvedStratagemCount(), {
         title: t("kioskLotteryEndTitle"),
         message: t("kioskLotteryEndMsg"),
       });
@@ -1532,7 +1559,7 @@
     }
     if (preset === "sprint30" && (reason === "time" || reason === "session")) {
       ClassicStratagemHero.stop();
-      showFinalScreenModal("victory", finalScore, {
+      showFinalScreenModal("victory", finalScore, getSolvedStratagemCount(), {
         title: t("kioskSprintEndTitle"),
         message: t("kioskTimedEndMsg"),
       });
@@ -1541,7 +1568,7 @@
     }
     if (preset === "marathon5" && (reason === "session" || reason === "time")) {
       ClassicStratagemHero.stop();
-      showFinalScreenModal("victory", finalScore, {
+      showFinalScreenModal("victory", finalScore, getSolvedStratagemCount(), {
         title: t("kioskMarathonEndTitle"),
         message: t("kioskTimedEndMsg"),
       });
@@ -1561,6 +1588,7 @@
       kioskPreset: preset,
       sessionDeadline: null,
       level: 1,
+      solvedStratagems: 0,
     };
     initRunAutomatonState(run);
     updateErrorsHud();
@@ -1588,6 +1616,7 @@
 
   function classicOnStratCompleted() {
     if (!run || !run.classicRun) return;
+    run.solvedStratagems = (run.solvedStratagems || 0) + 1;
     tryInvasionsAfterSuccess();
     applyGlobalBackgrounds();
   }
@@ -1655,6 +1684,12 @@
       getIlluminateRtlInput: () => !!(run && run.classicRun && isIlluminatiInvasionEffectActive()),
       onClassicActiveStratagemChanged: () => bumpAutomatonPlayfieldRandomOrientation(),
     });
+    const gb = deepMerge(defaultConfig().generalBrasch, cfg.generalBrasch || {});
+    if (ClassicStratagemHero.setBraschAnthemVolume01) {
+      ClassicStratagemHero.setBraschAnthemVolume01(
+        Number.isFinite(Number(gb.anthemVolume)) ? Math.max(0, Math.min(1, Number(gb.anthemVolume))) : 1
+      );
+    }
   }
 
   function ensureClassicAttractMode() {
@@ -1923,7 +1958,7 @@
   }
 
   function showGameOverModal() {
-    showFinalScreenModal("defeat", run ? run.score : 0, null);
+    showFinalScreenModal("defeat", run ? run.score : 0, getSolvedStratagemCount(), null);
   }
 
   function cancelKioskAutoRestart() {
@@ -1990,7 +2025,7 @@
     updateTimerHud();
     updateSessionHud();
     updateErrorsHud();
-    showFinalScreenModal("defeat", defeatScore, {
+    showFinalScreenModal("defeat", defeatScore, getSolvedStratagemCount(), {
       title: t("gameOverTitle"),
       message: t("defeatMaxErrors"),
     });
@@ -2562,6 +2597,11 @@
     if (gbDur) gbDur.value = String(Math.max(1000, Math.floor(Number(gb.durationMs) || gbDef.durationMs)));
     const gbUrl = el("generalBraschAnthemUrl");
     if (gbUrl) gbUrl.value = gb.anthemUrl || "";
+    const gbVol = el("generalBraschAnthemVolume");
+    if (gbVol)
+      gbVol.value = String(
+        Math.max(0, Math.min(1, Number.isFinite(Number(gb.anthemVolume)) ? Number(gb.anthemVolume) : gbDef.anthemVolume))
+      );
     const gbPortrait = el("generalBraschPortraitUrl");
     if (gbPortrait) gbPortrait.value = gb.portraitUrl || "";
 
@@ -2975,18 +3015,26 @@
       const en = el("generalBraschEnabled");
       if (en) cfg.generalBrasch.enabled = en.checked;
       const n = Math.max(1, Math.floor(Number(el("generalBraschEveryN")?.value) || d.everyNStratagems));
-      let dur = Math.max(1000, Math.floor(Number(el("generalBraschDurationMs")?.value) || d.durationMs));
+      const dur = Math.max(1000, Math.floor(Number(el("generalBraschDurationMs")?.value) || d.durationMs));
+      const anthemVolRaw = Number(el("generalBraschAnthemVolume")?.value);
+      const anthemVol = Number.isFinite(anthemVolRaw) ? Math.max(0, Math.min(1, anthemVolRaw)) : d.anthemVolume;
       cfg.generalBrasch.everyNStratagems = n;
       cfg.generalBrasch.durationMs = dur;
       cfg.generalBrasch.anthemUrl = (el("generalBraschAnthemUrl")?.value || "").trim();
+      cfg.generalBrasch.anthemVolume = anthemVol;
       cfg.generalBrasch.portraitUrl = (el("generalBraschPortraitUrl")?.value || "").trim();
       const gbN = el("generalBraschEveryN");
       const gbDur = el("generalBraschDurationMs");
+      const gbVol = el("generalBraschAnthemVolume");
       if (gbN) gbN.value = String(n);
       if (gbDur) gbDur.value = String(dur);
+      if (gbVol) gbVol.value = String(anthemVol);
+      if (typeof ClassicStratagemHero !== "undefined" && ClassicStratagemHero.setBraschAnthemVolume01) {
+        ClassicStratagemHero.setBraschAnthemVolume01(anthemVol);
+      }
       saveConfig(cfg);
     }
-    ["generalBraschEnabled", "generalBraschEveryN", "generalBraschDurationMs"].forEach((id) => {
+    ["generalBraschEnabled", "generalBraschEveryN", "generalBraschDurationMs", "generalBraschAnthemVolume"].forEach((id) => {
       const node = el(id);
       if (!node) return;
       node.addEventListener("change", persistGeneralBraschFromForm);

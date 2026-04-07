@@ -98,6 +98,9 @@
               <span
                 ><span data-i18n="classicScoreLabel">Score</span> <span id="classicInfoScore">0</span></span
               >
+              <span
+                ><span data-i18n="classicSolvedLabel">Solved</span> <span id="classicInfoSolved">0</span></span
+              >
             </div>
             <div id="classicComboWrap" class="classic-combo-hud" hidden>
               <span data-i18n="classicComboLabel">Toward General Brasch</span>
@@ -186,12 +189,18 @@
               Total
             </p>
             <p id="classicRoTotal" class="classic-ro__line classic-ro--hidden">0</p>
+            <p id="classicRoSolvedWrap" class="classic-ro__line classic-ro--hidden">
+              <span data-i18n="classicSolvedLabel">Solved</span> <span id="classicRoSolved">0</span>
+            </p>
           </div>
 
           <div id="classicScreenGameOver" class="classic-screen" hidden>
             <p class="classic-screen__title" data-i18n="classicGameOver">Game over</p>
             <p class="classic-go__score">
               <span data-i18n="classicScoreLabel">Score</span> <span id="classicGoScore">0</span>
+            </p>
+            <p class="classic-go__score">
+              <span data-i18n="classicSolvedLabel">Solved</span> <span id="classicGoSolved">0</span>
             </p>
             <p id="classicGoRestart" class="classic-screen__sub" hidden data-i18n="classicPressRestart">
               Press Space or any direction to restart
@@ -502,6 +511,10 @@
           <label class="block">
             <span data-i18n="generalBraschAnthemUrl">Anthem audio URL or path (empty = silence)</span>
             <input type="text" id="generalBraschAnthemUrl" placeholder="" />
+          </label>
+          <label class="block">
+            <span data-i18n="generalBraschAnthemVolume">Anthem volume (0–1)</span>
+            <input type="number" id="generalBraschAnthemVolume" min="0" max="1" step="0.05" value="0.75" />
           </label>
           <label class="block">
             <span data-i18n="generalBraschPortraitUrl">General Brasch portrait (image URL or path)</span>

@@ -697,6 +697,25 @@ html.terminid-takeover #panelPlay {
   animation: terminid-fog-pulse var(--terminid-fog-pulse-ms, 4500ms) ease-in-out infinite;
 }
 
+html.terminid-takeover .playfield {
+  filter: saturate(0.72) contrast(1.22) brightness(0.78) blur(1.2px);
+}
+
+html.terminid-takeover #classicGameRoot,
+html.terminid-takeover .classic-screen,
+html.terminid-takeover .classic-active-name,
+html.terminid-takeover .classic-arrow,
+html.terminid-takeover .classic-strat-item {
+  text-shadow: 0 0 1px rgba(36, 22, 12, 0.85), 1px 0 0 rgba(26, 10, 4, 0.55), -1px 0 0 rgba(8, 24, 10, 0.45);
+  filter: blur(0.7px) contrast(1.1);
+}
+
+html.terminid-takeover .classic-game__hud,
+html.terminid-takeover .classic-timers-row,
+html.terminid-takeover .hud-skulls-row {
+  filter: blur(0.9px) opacity(0.86);
+}
+
 @keyframes terminid-fog-pulse {
   0%,
   100% {

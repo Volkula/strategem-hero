@@ -91,6 +91,8 @@
   /** `Date.now()` until which round timer is frozen and Brasch UI is active. */
   let braschModeUntil = 0;
   let anthemHowl = null;
+  /** Multiplier for anthem loudness against current master volume (0..1). */
+  let anthemVolumeMul = 1;
 
   function getBraschCfg() {
     const d = {
@@ -98,6 +100,7 @@
       everyNStratagems: 50,
       durationMs: 10000,
       anthemUrl: "",
+      anthemVolume: 1,
       portraitUrl: "",
     };
     if (!deps || typeof deps.getGeneralBraschConfig !== "function") return d;
@@ -108,6 +111,7 @@
       durationMs: Math.max(1000, Math.floor(Number(c.durationMs)) || 10000),
       anthemUrl: String(c.anthemUrl || "").trim(),
       portraitUrl: String(c.portraitUrl || "").trim(),
+      anthemVolume: Math.max(0, Math.min(1, Number.isFinite(Number(c.anthemVolume)) ? Number(c.anthemVolume) : 1)),
     };
   }
 
@@ -198,7 +202,7 @@
     if (!u || typeof Howl === "undefined") return;
     ensureHowls();
     stopAnthem();
-    const vol = typeof Howler !== "undefined" ? Howler.volume() : 0.82;
+    const vol = (typeof Howler !== "undefined" ? Howler.volume() : 0.82) * anthemVolumeMul;
     const src = /\s/.test(u) ? encodeURI(u) : u;
     anthemHowl = new Howl({ src: [src], html5: true, volume: vol, loop: false });
     try {
@@ -237,6 +241,7 @@
 
   function startBraschMode(bc) {
     if (!bc || !bc.enabled || !active || screen !== "in_game") return;
+    anthemVolumeMul = Math.max(0, Math.min(1, Number(bc.anthemVolume)));
     braschModeUntil = Date.now() + bc.durationMs;
     if (root) root.classList.add("classic-game--brasch");
     stopMusic();
@@ -262,6 +267,12 @@
           ? tFn("classicComboHud").replace("{n}", String(n)).replace("{goal}", String(goal))
           : `${n} / ${goal}`;
     }
+  }
+
+  function updateSolvedCounters() {
+    if (els.infoSolved) els.infoSolved.textContent = String(completedStratagemCount);
+    if (els.roSolved) els.roSolved.textContent = String(completedStratagemCount);
+    if (els.goSolved) els.goSolved.textContent = String(completedStratagemCount);
   }
 
   function formatModeTimeLeft(ms) {
@@ -602,6 +613,7 @@
     if (els.roundCount) els.roundCount.textContent = String(round);
     if (els.infoRound) els.infoRound.textContent = String(round);
     if (els.infoScore) els.infoScore.textContent = String(score);
+    updateSolvedCounters();
     if (readyLines.length && Math.floor(10 * Math.random()) + 1 > 6) {
       const ri = Math.floor(Math.random() * readyLines.length);
       if (els.readyText) els.readyText.textContent = readyLines[ri];
@@ -638,9 +650,10 @@
     if (els.roPerfectBonus) els.roPerfectBonus.textContent = String(perfectBonus);
     if (els.roTotal) els.roTotal.textContent = String(score);
     if (els.infoScore) els.infoScore.textContent = String(score);
+    updateSolvedCounters();
 
     const hide = (nodes) => nodes.forEach((n) => n && n.classList.add("classic-ro--hidden"));
-    hide([els.roTimeLbl, els.roTimeBonus, els.roPerfLbl, els.roPerfectBonus, els.roTotLbl, els.roTotal]);
+    hide([els.roTimeLbl, els.roTimeBonus, els.roPerfLbl, els.roPerfectBonus, els.roTotLbl, els.roTotal, els.roSolvedWrap]);
     timeRoundOver = TIME_ROUND_OVER;
     showScreen("round_over");
     playSfx("round_over");
@@ -651,6 +664,7 @@
     const why = reason || "time";
     timeGameOver = TIME_GAME_OVER;
     if (els.goScore) els.goScore.textContent = String(score);
+    updateSolvedCounters();
     if (els.goRestart) els.goRestart.hidden = true;
     if (els.btnRestart) els.btnRestart.hidden = true;
     showScreen("game_over");
@@ -676,7 +690,7 @@
     const show = (nodes) => nodes.forEach((n) => n && n.classList.remove("classic-ro--hidden"));
     if (timeRoundOver < TIME_ROUND_OVER - 800) show([els.roTimeLbl, els.roTimeBonus]);
     if (timeRoundOver < TIME_ROUND_OVER - 1600) show([els.roPerfLbl, els.roPerfectBonus]);
-    if (timeRoundOver < TIME_ROUND_OVER - 2800) show([els.roTotLbl, els.roTotal]);
+    if (timeRoundOver < TIME_ROUND_OVER - 2800) show([els.roTotLbl, els.roTotal, els.roSolvedWrap]);
     if (timeRoundOver <= 0) {
       onRoundStarting();
     }
@@ -741,6 +755,7 @@
       removeActiveStratagem();
       completedStratagemCount += 1;
       updateComboHud();
+      updateSolvedCounters();
       const roundJustEnded = queue.length === 0;
       const bc = getBraschCfg();
       if (
@@ -750,6 +765,11 @@
         completedStratagemCount % bc.everyNStratagems === 0
       ) {
         startBraschMode(bc);
+      }
+      if (roundJustEnded && isBraschActive()) {
+        buildQueue();
+        resetCurrentSequenceProgress();
+        return;
       }
       if (roundJustEnded) {
         stopMusic();
@@ -821,6 +841,7 @@
     sequencePerfect = true;
     clearQueueUi();
     if (els.infoScore) els.infoScore.textContent = "0";
+    updateSolvedCounters();
     if (els.goRestart) els.goRestart.hidden = true;
     if (els.btnRestart) els.btnRestart.hidden = true;
     onRoundStarting();
@@ -854,6 +875,7 @@
         modeTimerBar: root.querySelector("#classicModeTimerBar"),
         infoRound: root.querySelector("#classicInfoRound"),
         infoScore: root.querySelector("#classicInfoScore"),
+        infoSolved: root.querySelector("#classicInfoSolved"),
         roRoundBonus: root.querySelector("#classicRoRoundBonus"),
         roTimeLbl: root.querySelector("#classicRoTimeLbl"),
         roTimeBonus: root.querySelector("#classicRoTimeBonus"),
@@ -861,7 +883,10 @@
         roPerfectBonus: root.querySelector("#classicRoPerfectBonus"),
         roTotLbl: root.querySelector("#classicRoTotLbl"),
         roTotal: root.querySelector("#classicRoTotal"),
+        roSolvedWrap: root.querySelector("#classicRoSolvedWrap"),
+        roSolved: root.querySelector("#classicRoSolved"),
         goScore: root.querySelector("#classicGoScore"),
+        goSolved: root.querySelector("#classicGoSolved"),
         goRestart: root.querySelector("#classicGoRestart"),
         btnStart: root.querySelector("#classicBtnStart"),
         btnRestart: root.querySelector("#classicBtnRestart"),
@@ -930,6 +955,7 @@
       showScreen("start");
       if (els.goRestart) els.goRestart.hidden = true;
       if (els.btnRestart) els.btnRestart.hidden = true;
+      updateSolvedCounters();
       ensureLoop();
     },
 
@@ -956,6 +982,17 @@
     },
 
     setVolume01: setVolume01,
+    setBraschAnthemVolume01(v) {
+      anthemVolumeMul = Math.max(0, Math.min(1, Number(v)));
+      if (anthemHowl) {
+        const master = typeof Howler !== "undefined" ? Howler.volume() : 0.82;
+        try {
+          anthemHowl.volume(master * anthemVolumeMul);
+        } catch {
+          /* ignore */
+        }
+      }
+    },
     setDirectionSfxMuted(muted) {
       directionSfxMuted = !!muted;
     },
@@ -969,6 +1006,9 @@
 
     getSessionDeadline() {
       return sessionDeadline;
+    },
+    getCompletedStratagemCount() {
+      return completedStratagemCount;
     },
 
     refillRoundTimerAfterLifeLost() {

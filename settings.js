@@ -153,6 +153,7 @@
         everyNStratagems: 50,
         durationMs: 10000,
         anthemUrl: DEFAULT_BRASCH_ANTHEM_PATH,
+        anthemVolume: 0.75,
         portraitUrl: DEFAULT_BRASCH_PORTRAIT_PATH,
       },
     };

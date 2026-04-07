@@ -77,7 +77,7 @@
         "Terminid — a semi-transparent spore fog is drawn over the playfield; opacity pulses between the minimum and maximum you set (defaults 40–80%).",
       helpSectionBraschTitle: "General Brasch burst",
       helpSectionBraschBody:
-        "Every N successful stratagems in the same round (default 50), a short burst runs: larger UI, optional anthem, portrait banner, and the round timer pauses. It does not trigger on the stratagem that ends the round. Configure N, duration, and media URLs under Settings.",
+        "Every N successful stratagems (default 50), a short burst runs: larger UI, optional anthem, portrait banner, and the round timer pauses. If a round would end during the burst, new stratagems keep coming until the burst timer ends. Configure N, duration, and media URLs under Settings.",
       helpSectionKioskTitle: "Kiosk / festival modes",
       helpSectionKioskBody:
         "Kiosk mode (?kiosk=1) offers presets: Easy (no harsh penalties), Sprint (score in 30 seconds), Lottery (one mistake ends the run), Marathon (5 minute session). A pressure-style timer may drain between codes in some presets. Optional auto-restart after the final screen is in Settings.",
@@ -203,6 +203,7 @@
       classicGetReady: "Get ready",
       classicRoundLabel: "Round",
       classicScoreLabel: "Score",
+      classicSolvedLabel: "Solved",
       classicRoundBonus: "Round bonus",
       classicTimeBonus: "Time bonus",
       classicPerfectBonus: "Perfect bonus",
@@ -221,11 +222,12 @@
       classicComboHud: "{n} / {goal}",
       generalBraschSettingsTitle: "General Brasch (classic play)",
       generalBraschSettingsHelp:
-        "Every N successful stratagems in a round: larger UI, optional anthem MP3, round timer paused for the set duration. Does not trigger on the stratagem that ends the round.",
+        "Every N successful stratagems: larger UI, optional anthem MP3, round timer paused for the set duration. If the queue would end during the burst, new stratagems keep spawning until the burst timer finishes.",
       generalBraschEnabledLabel: "Enable General Brasch bursts",
       generalBraschEveryN: "Stratagems per burst (N)",
       generalBraschDurationMs: "Burst length (ms)",
       generalBraschAnthemUrl: "Anthem audio URL or path (empty = silence)",
+      generalBraschAnthemVolume: "Anthem volume (0–1)",
       generalBraschPortraitUrl: "General Brasch portrait (image URL or path)",
       generalBraschPortraitHelp:
         "Large banner during Brasch mode. Default is a local placeholder SVG; you may save art from the wiki (personal use) into assets/images/ and point to it.",
@@ -258,7 +260,7 @@
       illuminateInvasionTimerLeft: "Illuminate hold: {time} left",
       terminidInvasionSettingsTitle: "Terminid invasion (classic play)",
       terminidInvasionSettingsHelp:
-        "Streak-based spore fog over the playfield; opacity pulses between configurable min and max. Order when multiple invasions fire at once is set under Automaton invasion.",
+        "Streak-based spore fog over the playfield; opacity pulses between configurable min and max. During this invasion the playfield is deliberately hard to read (blur/contrast + dense spores). Order when multiple invasions fire at once is set under Automaton invasion.",
       terminidInvasionEnabledLabel: "Enable Terminid invasion",
       terminidInvasionSuccessesMin: "Successes before invasion (min)",
       terminidInvasionSuccessesMax: "Successes before invasion (max)",
@@ -268,6 +270,7 @@
       terminidInvasionFogOpacityMax: "Fog opacity max (0–1)",
       terminidInvasionFogPulsePeriodMs: "Fog pulse cycle (ms, one min→max→min)",
       terminidInvasionFogImageUrl: "Fog image URL or path (empty = built-in texture)",
+      finalScreenSolvedLine: "Solved stratagems: {count}",
     },
     ru: {
       appTitle: "Stratagem Hero",
@@ -343,7 +346,7 @@
         "Терминиды — полупрозрачный споровый туман поверх поля; непрозрачность пульсирует между заданным минимумом и максимумом (по умолчанию 40–80%).",
       helpSectionBraschTitle: "Всплеск «Генерал Браш»",
       helpSectionBraschBody:
-        "Каждые N успешных стратегем в том же раунде (по умолчанию 50) запускают короткий режим: крупнее интерфейс, опционально гимн и портрет, таймер раунда на паузе. Не срабатывает на стратегеме, которая завершает раунд. Параметры — в настройках.",
+        "Каждые N успешных стратегем (по умолчанию 50) запускают короткий режим: крупнее интерфейс, опционально гимн и портрет, таймер раунда на паузе. Если во время вспышки раунд должен закончиться, стратегемы продолжают добавляться до конца таймера режима. Параметры — в настройках.",
       helpSectionKioskTitle: "Киоск / фестивальные режимы",
       helpSectionKioskBody:
         "Режим киоска (?kiosk=1): Простой (без жёстких штрафов), Спринт (30 с на очки), Лотерея (до первой ошибки), Марафон (сессия 5 мин). В части режимов между кодами может убывать «давление» по таймеру. Автоперезапуск после финального экрана — в настройках.",
@@ -470,6 +473,7 @@
       classicGetReady: "Приготовьтесь",
       classicRoundLabel: "Раунд",
       classicScoreLabel: "Очки",
+      classicSolvedLabel: "Решено",
       classicRoundBonus: "Бонус раунда",
       classicTimeBonus: "Бонус времени",
       classicPerfectBonus: "Бонус за идеал",
@@ -488,11 +492,12 @@
       classicComboHud: "{n} / {goal}",
       generalBraschSettingsTitle: "Генерал Браш (классический режим)",
       generalBraschSettingsHelp:
-        "Каждые N успешных стратегем в раунде: крупнее интерфейс, по желанию гимн (MP3), таймер раунда останавливается на заданное время. Не срабатывает на стратегеме, завершающей раунд.",
+        "Каждые N успешных стратегем: крупнее интерфейс, по желанию гимн (MP3), таймер раунда останавливается на заданное время. Если очередь должна закончиться во время вспышки, стратегемы продолжают добавляться до завершения таймера режима.",
       generalBraschEnabledLabel: "Включить режим генерала Браша",
       generalBraschEveryN: "Стратегем до вспышки (N)",
       generalBraschDurationMs: "Длительность вспышки (мс)",
       generalBraschAnthemUrl: "URL или путь к гимну (пусто — без звука)",
+      generalBraschAnthemVolume: "Громкость гимна (0–1)",
       generalBraschPortraitUrl: "Портрет генерала Браша (URL или путь к изображению)",
       generalBraschPortraitHelp:
         "Крупная плашка в режиме Браша. По умолчанию — локальный SVG-заглушка; можно сохранить арт с вики в assets/images/ и указать путь.",
@@ -525,7 +530,7 @@
       illuminateInvasionTimerLeft: "Удержание Illuminate: осталось {time}",
       terminidInvasionSettingsTitle: "Вторжение терминидов (классический режим)",
       terminidInvasionSettingsHelp:
-        "Серия успехов: полупрозрачный споровый туман поверх поля, сила меняется между заданными минимумом и максимумом. Порядок при одновременном срабатывании — в блоке вторжения автоматонов.",
+        "Серия успехов: полупрозрачный споровый туман поверх поля, сила меняется между заданными минимумом и максимумом. Во время вторжения экран специально ухудшается по читаемости (размытие/контраст + плотные споры). Порядок при одновременном срабатывании — в блоке вторжения автоматонов.",
       terminidInvasionEnabledLabel: "Включить вторжение терминидов",
       terminidInvasionSuccessesMin: "Успехов до вторжения (мин.)",
       terminidInvasionSuccessesMax: "Успехов до вторжения (макс.)",
@@ -535,6 +540,7 @@
       terminidInvasionFogOpacityMax: "Макс. непрозрачность тумана (0–1)",
       terminidInvasionFogPulsePeriodMs: "Цикл пульсации тумана (мс, мин→макс→мин)",
       terminidInvasionFogImageUrl: "Картинка тумана (URL или путь; пусто — встроенная текстура)",
+      finalScreenSolvedLine: "Решено стратегем: {count}",
     },
   };
 
