@@ -827,9 +827,8 @@
     return !!(
       run &&
       run.active &&
-      run.automatonWarnUntil != null &&
       run.automatonUntil &&
-      Date.now() >= run.automatonWarnUntil &&
+      Date.now() >= (run.automatonWarnUntil == null ? 0 : run.automatonWarnUntil) &&
       Date.now() < run.automatonUntil
     );
   }
@@ -838,9 +837,8 @@
     return !!(
       run &&
       run.active &&
-      run.terminidWarnUntil != null &&
       run.terminidUntil &&
-      Date.now() >= run.terminidWarnUntil &&
+      Date.now() >= (run.terminidWarnUntil == null ? 0 : run.terminidWarnUntil) &&
       Date.now() < run.terminidUntil
     );
   }

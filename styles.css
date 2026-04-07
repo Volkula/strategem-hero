@@ -782,6 +782,14 @@ html.terminid-takeover .hud-skulls-row {
   z-index: 12;
 }
 
+@media (max-width: 600px) {
+  html.terminid-takeover .playfield > .terminid-fog-overlay {
+    display: block !important;
+    opacity: max(0.35, var(--terminid-fog-opacity-min, 0.4));
+    z-index: 20;
+  }
+}
+
 .hud {
   display: flex;
   flex-wrap: wrap;
