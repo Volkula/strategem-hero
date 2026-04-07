@@ -1749,9 +1749,10 @@
     stopLoadingLineTicker();
     if (!isKioskMode()) return;
     const preset = lastKioskPreset;
+    const solvedBeforeStop = getSolvedStratagemCount();
     if (preset === "lottery" && (reason === "wrong" || reason === "time")) {
       ClassicStratagemHero.stop();
-      showFinalScreenModal("defeat", finalScore, getSolvedStratagemCount(), {
+      showFinalScreenModal("defeat", finalScore, solvedBeforeStop, {
         title: t("kioskLotteryEndTitle"),
         message: t("kioskLotteryEndMsg"),
       }, getKioskModeFinalScreen("defeat"));
@@ -1760,7 +1761,7 @@
     }
     if (preset === "sprint30" && (reason === "time" || reason === "session")) {
       ClassicStratagemHero.stop();
-      showFinalScreenModal("victory", finalScore, getSolvedStratagemCount(), {
+      showFinalScreenModal("victory", finalScore, solvedBeforeStop, {
         title: t("kioskSprintEndTitle"),
         message: t("kioskTimedEndMsg"),
       }, getKioskModeFinalScreen("victory"));
@@ -1769,7 +1770,7 @@
     }
     if (preset === "marathon5" && (reason === "session" || reason === "time")) {
       ClassicStratagemHero.stop();
-      showFinalScreenModal("victory", finalScore, getSolvedStratagemCount(), {
+      showFinalScreenModal("victory", finalScore, solvedBeforeStop, {
         title: t("kioskMarathonEndTitle"),
         message: t("kioskTimedEndMsg"),
       }, getKioskModeFinalScreen("victory"));
@@ -1779,7 +1780,7 @@
     const mode = resolveKioskMode(preset);
     if (reason === "session" && mode && mode.timerEnabled) {
       ClassicStratagemHero.stop();
-      showFinalScreenModal("victory", finalScore, getSolvedStratagemCount(), {
+      showFinalScreenModal("victory", finalScore, solvedBeforeStop, {
         title: t("kioskSprintEndTitle"),
         message: t("kioskTimedEndMsg"),
       }, getKioskModeFinalScreen("victory"));
@@ -1787,7 +1788,7 @@
       return;
     }
     ClassicStratagemHero.stop();
-    showFinalScreenModal("defeat", finalScore, getSolvedStratagemCount(), {
+    showFinalScreenModal("defeat", finalScore, solvedBeforeStop, {
       title: t("gameOverTitle"),
       message: t("defeatMaxErrors"),
     }, getKioskModeFinalScreen("defeat"));
