@@ -497,6 +497,11 @@ html.automaton-takeover .classic-game * {
   font-family: "HD Automaton", "Segoe UI", system-ui, sans-serif !important;
 }
 
+html.automaton-takeover #app,
+html.automaton-takeover #app * {
+  font-family: "HD Automaton", "Segoe UI", system-ui, sans-serif !important;
+}
+
 .illuminate-watermark {
   position: absolute;
   left: 50%;
@@ -776,6 +781,11 @@ html.illuminati-takeover .classic-game {
 
 html.illuminati-takeover .classic-game,
 html.illuminati-takeover .classic-game * {
+  font-family: "HD Illuminati", "Segoe UI", system-ui, sans-serif !important;
+}
+
+html.illuminati-takeover #app,
+html.illuminati-takeover #app * {
   font-family: "HD Illuminati", "Segoe UI", system-ui, sans-serif !important;
 }
 
