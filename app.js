@@ -921,6 +921,7 @@
         layer.style.removeProperty("background-image");
       }
     }
+    updateTerminidInvasionHud();
   }
 
   const AUTOMATON_PLAYFIELD_TRANSFORMS = [
@@ -966,6 +967,7 @@
     const iw = el("illuminateWatermark");
     if (iw) iw.hidden = !on;
     updateIlluminateInvasionHud();
+    updateTerminidInvasionHud();
   }
 
   function updateIlluminateInvasionHud() {
@@ -988,12 +990,10 @@
     const now = Date.now();
     const warning =
       (run.illuminatiWarnUntil && now < run.illuminatiWarnUntil && { kind: "illuminate", until: run.illuminatiWarnUntil }) ||
-      (run.automatonWarnUntil && now < run.automatonWarnUntil && { kind: "automaton", until: run.automatonWarnUntil }) ||
-      (run.terminidWarnUntil && now < run.terminidWarnUntil && { kind: "terminid", until: run.terminidWarnUntil });
+      (run.automatonWarnUntil && now < run.automatonWarnUntil && { kind: "automaton", until: run.automatonWarnUntil });
     const active =
       (isIlluminatiInvasionEffectActive() && { kind: "illuminate", until: run.illuminatiUntil }) ||
-      (isAutomatonTakeoverActive() && { kind: "automaton", until: run.automatonUntil }) ||
-      (isTerminidTakeoverActive() && { kind: "terminid", until: run.terminidUntil });
+      (isAutomatonTakeoverActive() && { kind: "automaton", until: run.automatonUntil });
     if (!warning && !active) {
       host.hidden = true;
       banner.hidden = true;
@@ -1022,11 +1022,51 @@
       const key =
         active.kind === "automaton"
           ? "automatonInvasionTimerLeft"
-          : active.kind === "terminid"
-            ? "terminidInvasionTimerLeft"
-            : "illuminateInvasionTimerLeft";
+          : "illuminateInvasionTimerLeft";
       timer.textContent = t(key).replace("{time}", formatSessionLeft(left));
     }
+  }
+
+  function updateTerminidInvasionHud() {
+    const host = el("terminidInvasionHud");
+    const banner = el("terminidInvasionBanner");
+    const timer = el("terminidInvasionTimer");
+    const progressWrap = el("terminidInvasionProgressWrap");
+    const fill = el("terminidInvasionProgressFill");
+    if (!host || !banner || !timer || !progressWrap || !fill) return;
+    const classicOn =
+      typeof ClassicStratagemHero !== "undefined" &&
+      ClassicStratagemHero.isActive() &&
+      ClassicStratagemHero.getScreen &&
+      ClassicStratagemHero.getScreen() === "in_game";
+    if (!classicOn || !run || !run.classicRun || !isTerminidInvasionScheduled()) {
+      host.hidden = true;
+      banner.hidden = true;
+      timer.hidden = true;
+      progressWrap.hidden = true;
+      fill.style.width = "0%";
+      return;
+    }
+    const now = Date.now();
+    host.hidden = false;
+    if (run.terminidWarnUntil && now < run.terminidWarnUntil) {
+      const sec = Math.max(1, Math.ceil((run.terminidWarnUntil - now) / 1000));
+      banner.hidden = false;
+      banner.textContent = t("terminidInvasionBannerText").replace("{seconds}", String(sec));
+      timer.hidden = true;
+      progressWrap.hidden = true;
+      fill.style.width = "0%";
+      return;
+    }
+    banner.hidden = true;
+    timer.hidden = false;
+    progressWrap.hidden = false;
+    const startAt = run.terminidWarnUntil == null ? run.terminidUntil - 1 : run.terminidWarnUntil;
+    const dur = Math.max(1, run.terminidUntil - startAt);
+    const left = Math.max(0, run.terminidUntil - now);
+    const pct = Math.max(0, Math.min(100, ((dur - left) / dur) * 100));
+    fill.style.width = `${pct}%`;
+    timer.textContent = t("terminidInvasionTimerLeft").replace("{time}", formatSessionLeft(left));
   }
 
   function maybeEndAutomatonTakeover() {
@@ -1850,6 +1890,7 @@
     maybeEndIlluminatiTakeover();
     maybeEndTerminidTakeover();
     updateIlluminateInvasionHud();
+    updateTerminidInvasionHud();
     updateSessionHud();
   }
 
