@@ -67,6 +67,15 @@
             />
           </div>
           <div class="classic-game__topbar">
+            <div id="kioskModeTopbar" class="kiosk-mode-topbar" hidden>
+              <label class="kiosk-mode-topbar__label">
+                <span data-i18n="kioskModeDropdownLabel">Game mode</span>
+                <select id="kioskModeSelectTop"></select>
+              </label>
+              <button type="button" id="kioskModeApplyTop" class="kiosk-menu__btn kiosk-mode-topbar__btn" data-i18n="kioskModeApply">
+                Start selected
+              </button>
+            </div>
             <label class="classic-game__volume">
               <span class="visually-hidden" data-i18n="classicVolumeAria">Game volume</span>
               <input type="range" id="classicVolSlider" min="0" max="100" value="82" />
@@ -106,6 +115,7 @@
               <span data-i18n="classicComboLabel">Toward General Brasch</span>
               <span id="classicComboHud" class="classic-combo-hud__value">0 / 50</span>
             </div>
+            <div id="classicBraschWarnBanner" class="illuminate-invasion-banner" hidden role="status" aria-live="polite"></div>
             <div id="illuminateInvasionHud" class="illuminate-invasion-hud" hidden>
               <div
                 id="illuminateInvasionBanner"
@@ -216,12 +226,9 @@
         <p class="hint play-hint-banner" id="playHint" hidden data-i18n="playHint"></p>
         <div id="kioskMenu" class="kiosk-menu" hidden>
           <p class="kiosk-menu__label" data-i18n="kioskMenuTitle">Festival modes</p>
-          <div class="kiosk-menu__grid">
+          <div class="kiosk-menu__grid" id="kioskModesGrid">
             <button type="button" class="kiosk-menu__btn" id="kioskBtnRestart" data-i18n="kioskRestart">Start over</button>
-            <button type="button" class="kiosk-menu__btn" id="kioskBtnEasy" data-i18n="kioskEasy">Easy (no penalties)</button>
-            <button type="button" class="kiosk-menu__btn" id="kioskBtnSprint" data-i18n="kioskSprint">Sprint (30s)</button>
-            <button type="button" class="kiosk-menu__btn" id="kioskBtnLottery" data-i18n="kioskLottery">Lottery (one mistake)</button>
-            <button type="button" class="kiosk-menu__btn" id="kioskBtnMarathon" data-i18n="kioskMarathon">Marathon (5 min)</button>
+            <div id="kioskModesHost"></div>
           </div>
         </div>
         <div id="terminidFogLayer" class="terminid-fog-overlay" hidden aria-hidden="true"></div>
@@ -402,6 +409,10 @@
             <span data-i18n="invasionDurationMaxMs">Invasion length max (ms)</span>
             <input type="number" id="invasionDurationMaxMs" min="1000" max="300000" step="500" value="40000" />
           </label>
+          <label class="block">
+            <span data-i18n="invasionWarnLeadMs">Warning before invasion (ms, 0 = off)</span>
+            <input type="number" id="invasionWarnLeadMs" min="0" max="60000" step="500" value="4000" />
+          </label>
           <div class="settings-section-actions">
             <button type="button" class="btn-reset-section" data-reset-section="classicInvasion" data-i18n="resetSectionDefaults">
               Reset this section to defaults
@@ -467,6 +478,10 @@
             <input type="number" id="terminidInvasionDurationMaxMs" min="1000" max="300000" step="500" value="40000" />
           </label>
           <label class="block">
+            <span data-i18n="terminidInvasionWarnLeadMs">Warning before invasion (ms, 0 = off)</span>
+            <input type="number" id="terminidInvasionWarnLeadMs" min="0" max="60000" step="500" value="4000" />
+          </label>
+          <label class="block">
             <span data-i18n="terminidInvasionFogOpacityMin">Fog opacity min (0–1)</span>
             <input type="number" id="terminidInvasionFogOpacityMin" min="0" max="1" step="0.05" value="0.4" />
           </label>
@@ -509,6 +524,10 @@
             <input type="number" id="generalBraschDurationMs" min="1000" max="120000" step="500" value="10000" />
           </label>
           <label class="block">
+            <span data-i18n="generalBraschWarnLeadMs">Warning before burst (ms, 0 = off)</span>
+            <input type="number" id="generalBraschWarnLeadMs" min="0" max="60000" step="500" value="4000" />
+          </label>
+          <label class="block">
             <span data-i18n="generalBraschAnthemUrl">Anthem audio URL or path (empty = silence)</span>
             <input type="text" id="generalBraschAnthemUrl" placeholder="" />
           </label>
@@ -546,6 +565,10 @@
           <label class="inline">
             <input type="checkbox" id="kioskAutoRestart" />
             <span data-i18n="kioskAutoRestartLabel">Kiosk: auto-restart the same festival mode after the final screen</span>
+          </label>
+          <label class="inline">
+            <input type="checkbox" id="kioskDisableAutoStart" />
+            <span data-i18n="kioskDisableAutoStartLabel">Kiosk: do not auto-start mode; keep Start game screen</span>
           </label>
           <label class="block">
             <span data-i18n="kioskAutoRestartDelayLabel">Auto-restart delay (ms)</span>
@@ -768,6 +791,62 @@
       <div class="row-btns">
         <button type="button" id="editorApply" data-i18n="apply">Apply override</button>
         <button type="button" id="editorReset" data-i18n="resetOverride">Remove override</button>
+      </div>
+      <hr />
+      <h3 data-i18n="kioskModesEditorTitle">Kiosk modes editor</h3>
+      <label class="block">
+        <span data-i18n="kioskModePick">Mode</span>
+        <select id="editorKioskModeSelect"></select>
+      </label>
+      <div class="row-btns">
+        <button type="button" id="editorKioskModeNew" data-i18n="kioskModeNew">New mode</button>
+        <button type="button" id="editorKioskModeDelete" data-i18n="kioskModeDelete">Delete mode</button>
+      </div>
+      <label class="block">
+        <span data-i18n="kioskModeName">Name</span>
+        <input type="text" id="editorKioskModeName" />
+      </label>
+      <label class="inline">
+        <input type="checkbox" id="editorKioskModeEnabled" />
+        <span data-i18n="kioskModeEnabled">Available in kiosk menu</span>
+      </label>
+      <label class="block">
+        <span data-i18n="kioskModeLives">Lives (0 = unlimited)</span>
+        <input type="number" id="editorKioskModeLives" min="0" max="99" step="1" value="3" />
+      </label>
+      <label class="inline">
+        <input type="checkbox" id="editorKioskModeTimerEnabled" />
+        <span data-i18n="kioskModeTimerEnabled">Enable session timer</span>
+      </label>
+      <label class="block">
+        <span data-i18n="kioskModeTimerMs">Session timer (ms)</span>
+        <input type="number" id="editorKioskModeTimerMs" min="1000" max="3600000" step="500" value="30000" />
+      </label>
+      <p class="small" data-i18n="kioskModeInvasions">Allowed invasions in this mode</p>
+      <label class="inline"><input type="checkbox" id="editorKioskModeInvAutomaton" /><span>Automaton</span></label>
+      <label class="inline"><input type="checkbox" id="editorKioskModeInvIlluminate" /><span>Illuminate</span></label>
+      <label class="inline"><input type="checkbox" id="editorKioskModeInvTerminid" /><span>Terminid</span></label>
+      <label class="inline"><input type="checkbox" id="editorKioskModeInvBrasch" /><span>General Brasch</span></label>
+      <h4 data-i18n="kioskModeDefeatScreenTitle">Mode final screen — defeat</h4>
+      <label class="block"><span data-i18n="endScreenTitleField">Title</span><input type="text" id="editorKioskDefeatTitle" /></label>
+      <label class="block"><span data-i18n="endScreenMessageField">Message</span><textarea id="editorKioskDefeatMessage" rows="3"></textarea></label>
+      <label class="block"><span data-i18n="endScreenLinkUrl">Link URL</span><input type="url" id="editorKioskDefeatLinkUrl" /></label>
+      <label class="block"><span data-i18n="endScreenLinkText">Link label</span><input type="text" id="editorKioskDefeatLinkText" /></label>
+      <label class="inline"><input type="checkbox" id="editorKioskDefeatShowQr" /><span data-i18n="endScreenShowQrLabel">Show QR code on final screen</span></label>
+      <label class="block"><span data-i18n="endScreenQrUrl">QR code URL</span><input type="url" id="editorKioskDefeatQrUrl" /></label>
+      <label class="block"><span data-i18n="endScreenImage">Image file</span><input type="file" id="editorKioskDefeatImageFile" accept="image/*" /></label>
+      <div class="row-btns"><button type="button" id="editorKioskDefeatImageClear" data-i18n="clearEndScreenImage">Remove image</button></div>
+      <h4 data-i18n="kioskModeVictoryScreenTitle">Mode final screen — victory</h4>
+      <label class="block"><span data-i18n="endScreenTitleField">Title</span><input type="text" id="editorKioskVictoryTitle" /></label>
+      <label class="block"><span data-i18n="endScreenMessageField">Message</span><textarea id="editorKioskVictoryMessage" rows="3"></textarea></label>
+      <label class="block"><span data-i18n="endScreenLinkUrl">Link URL</span><input type="url" id="editorKioskVictoryLinkUrl" /></label>
+      <label class="block"><span data-i18n="endScreenLinkText">Link label</span><input type="text" id="editorKioskVictoryLinkText" /></label>
+      <label class="inline"><input type="checkbox" id="editorKioskVictoryShowQr" /><span data-i18n="endScreenShowQrLabel">Show QR code on final screen</span></label>
+      <label class="block"><span data-i18n="endScreenQrUrl">QR code URL</span><input type="url" id="editorKioskVictoryQrUrl" /></label>
+      <label class="block"><span data-i18n="endScreenImage">Image file</span><input type="file" id="editorKioskVictoryImageFile" accept="image/*" /></label>
+      <div class="row-btns"><button type="button" id="editorKioskVictoryImageClear" data-i18n="clearEndScreenImage">Remove image</button></div>
+      <div class="row-btns">
+        <button type="button" id="editorKioskModeApply" data-i18n="apply">Apply override</button>
       </div>
     </section>
 

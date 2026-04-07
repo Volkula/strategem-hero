@@ -188,6 +188,7 @@
         cfg.classicInvasion.successesMax = src.successesMax;
         cfg.classicInvasion.durationMinMs = src.durationMinMs;
         cfg.classicInvasion.durationMaxMs = src.durationMaxMs;
+        cfg.classicInvasion.warnLeadMs = src.warnLeadMs;
         break;
       }
       case "illuminati": {
@@ -207,6 +208,7 @@
         cfg.classicTerminidInvasion.successesMax = src.successesMax;
         cfg.classicTerminidInvasion.durationMinMs = src.durationMinMs;
         cfg.classicTerminidInvasion.durationMaxMs = src.durationMaxMs;
+        cfg.classicTerminidInvasion.warnLeadMs = src.warnLeadMs;
         cfg.classicTerminidInvasion.fogOpacityMin = src.fogOpacityMin;
         cfg.classicTerminidInvasion.fogOpacityMax = src.fogOpacityMax;
         cfg.classicTerminidInvasion.fogPulsePeriodMs = src.fogPulsePeriodMs;
@@ -218,6 +220,8 @@
         break;
       case "playKiosk":
         cfg.defaultKiosk = d.defaultKiosk;
+        cfg.kioskDisableAutoStart = d.kioskDisableAutoStart;
+        cfg.kioskModes = JSON.parse(JSON.stringify(d.kioskModes));
         cfg.restartOnSpace = d.restartOnSpace;
         cfg.kioskAutoRestart = d.kioskAutoRestart;
         cfg.kioskAutoRestartDelayMs = d.kioskAutoRestartDelayMs;
@@ -300,6 +304,10 @@
         cfg.classicInvasion = cfg.classicInvasion || { ...d.classicInvasion };
         cfg.classicInvasion.durationMaxMs = d.classicInvasion.durationMaxMs;
         break;
+      case "invasionWarnLeadMs":
+        cfg.classicInvasion = cfg.classicInvasion || { ...d.classicInvasion };
+        cfg.classicInvasion.warnLeadMs = d.classicInvasion.warnLeadMs;
+        break;
       case "invasionPriority":
         cfg.classicInvasionPriority = d.classicInvasionPriority;
         break;
@@ -322,6 +330,10 @@
       case "terminidInvasionDurationMaxMs":
         cfg.classicTerminidInvasion = cfg.classicTerminidInvasion || { ...d.classicTerminidInvasion };
         cfg.classicTerminidInvasion.durationMaxMs = d.classicTerminidInvasion.durationMaxMs;
+        break;
+      case "terminidInvasionWarnLeadMs":
+        cfg.classicTerminidInvasion = cfg.classicTerminidInvasion || { ...d.classicTerminidInvasion };
+        cfg.classicTerminidInvasion.warnLeadMs = d.classicTerminidInvasion.warnLeadMs;
         break;
       case "terminidInvasionFogOpacityMin":
         cfg.classicTerminidInvasion = cfg.classicTerminidInvasion || { ...d.classicTerminidInvasion };
@@ -375,6 +387,10 @@
         cfg.generalBrasch = cfg.generalBrasch || { ...d.generalBrasch };
         cfg.generalBrasch.durationMs = d.generalBrasch.durationMs;
         break;
+      case "generalBraschWarnLeadMs":
+        cfg.generalBrasch = cfg.generalBrasch || { ...d.generalBrasch };
+        cfg.generalBrasch.warnLeadMs = d.generalBrasch.warnLeadMs;
+        break;
       case "generalBraschAnthemUrl":
         cfg.generalBrasch = cfg.generalBrasch || { ...d.generalBrasch };
         cfg.generalBrasch.anthemUrl = d.generalBrasch.anthemUrl;
@@ -389,6 +405,9 @@
         break;
       case "defaultKiosk":
         cfg.defaultKiosk = d.defaultKiosk;
+        break;
+      case "kioskDisableAutoStart":
+        cfg.kioskDisableAutoStart = d.kioskDisableAutoStart;
         break;
       case "restartOnSpace":
         cfg.restartOnSpace = d.restartOnSpace;
@@ -539,8 +558,61 @@
   let touchStart = null;
   /** Last festival / kiosk mode used for «Start over». */
   let lastKioskPreset = "easy";
+  let kioskModeDraftSeq = 1;
 
   const el = (id) => document.getElementById(id);
+
+  function normalizeKioskMode(raw, fallbackId) {
+    const idBase = String((raw && raw.id) || fallbackId || `mode_${Date.now()}`).trim().toLowerCase();
+    const id = idBase.replace(/[^a-z0-9_-]/g, "_") || `mode_${Date.now()}`;
+    const name = String((raw && raw.name) || id).trim() || id;
+    const lives = Math.max(0, Math.floor(Number(raw && raw.lives) || 0));
+    const timerEnabled = !!(raw && raw.timerEnabled);
+    const timerMs = Math.max(1000, Math.floor(Number(raw && raw.timerMs) || 30000));
+    const inv = (raw && raw.invasions) || {};
+    return {
+      id,
+      name,
+      enabled: raw ? raw.enabled !== false : true,
+      lives,
+      timerEnabled,
+      timerMs,
+      invasions: {
+        automaton: inv.automaton !== false,
+        illuminate: inv.illuminate !== false,
+        terminid: inv.terminid !== false,
+        brasch: inv.brasch !== false,
+      },
+      endScreens: {
+        defeat: deepMerge(emptyFinalScreen(), (raw && raw.endScreens && raw.endScreens.defeat) || {}),
+        victory: deepMerge(emptyFinalScreen(), (raw && raw.endScreens && raw.endScreens.victory) || {}),
+      },
+    };
+  }
+
+  function getKioskModes() {
+    const defs = defaultConfig().kioskModes || [];
+    const src = Array.isArray(cfg.kioskModes) ? cfg.kioskModes : defs;
+    const out = [];
+    const seen = new Set();
+    src.forEach((m, i) => {
+      const x = normalizeKioskMode(m, defs[i] && defs[i].id);
+      if (!x.id || seen.has(x.id)) return;
+      seen.add(x.id);
+      out.push(x);
+    });
+    if (!out.length) return defs.map((m) => normalizeKioskMode(m, m.id));
+    return out;
+  }
+
+  function resolveKioskMode(modeId) {
+    const modes = getKioskModes();
+    return (
+      modes.find((m) => m.id === modeId) ||
+      modes.find((m) => m.enabled !== false) ||
+      normalizeKioskMode(defaultConfig().kioskModes[0], "easy")
+    );
+  }
 
   let stratagemKeyAudioCtx = null;
   const STRATAGEM_DIR_FREQ_HZ = { up: 523.25, down: 196, left: 392, right: 659.25 };
@@ -629,6 +701,7 @@
         btnExit.style.display = "none";
       }
     }
+    renderKioskModeButtons();
     updateKioskArcadeSplash();
     if (on) autoMarathonIfKiosk();
   }
@@ -643,6 +716,39 @@
     splash.hidden = !(isKioskMode() && !classicOn && !legacyRun);
   }
 
+  function renderKioskModeButtons() {
+    const topWrap = el("kioskModeTopbar");
+    if (topWrap) topWrap.hidden = !isKioskMode();
+    const host = el("kioskModesHost");
+    const topSel = el("kioskModeSelectTop");
+    const enabledModes = getKioskModes().filter((m) => m.enabled !== false);
+    if (host) {
+      host.innerHTML = "";
+      enabledModes.forEach((m) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "kiosk-menu__btn";
+        btn.textContent = m.name;
+        btn.addEventListener("click", () => startKioskRun(m.id));
+        host.appendChild(btn);
+      });
+    }
+    if (topSel) {
+      const prev = topSel.value;
+      topSel.innerHTML = "";
+      enabledModes.forEach((m) => {
+        const opt = document.createElement("option");
+        opt.value = m.id;
+        opt.textContent = m.name;
+        topSel.appendChild(opt);
+      });
+      if (topSel.options.length) {
+        const next = enabledModes.some((m) => m.id === prev) ? prev : lastKioskPreset;
+        topSel.value = enabledModes.some((m) => m.id === next) ? next : enabledModes[0].id;
+      }
+    }
+  }
+
   /** Kiosk: start 5‑min marathon automatically; any stratagem key also starts if idle. */
   function autoMarathonIfKiosk() {
     if (!isKioskMode()) return;
@@ -655,11 +761,25 @@
     if (modal && !modal.hidden) return;
     const list = getStratagemList(cfg);
     if (!eligiblePool(cfg, list).length) return;
-    startKioskRun("marathon5");
+    if (cfg.kioskDisableAutoStart) {
+      ensureClassicAttractMode();
+      return;
+    }
+    startKioskRun(lastKioskPreset || (getKioskModes()[0] && getKioskModes()[0].id) || "easy");
   }
 
   function usesKioskPressureTimer() {
-    return isKioskMode() && run && run.active && run.kioskPreset;
+    return isKioskMode() && run && run.active && run.kioskPreset && run.kioskMode && run.kioskMode.timerEnabled;
+  }
+
+  function isInvasionAllowedInCurrentMode(kind) {
+    if (!isKioskMode() || !run || !run.kioskMode) return true;
+    const inv = (run.kioskMode && run.kioskMode.invasions) || {};
+    if (kind === "automaton") return inv.automaton !== false;
+    if (kind === "illuminate") return inv.illuminate !== false;
+    if (kind === "terminid") return inv.terminid !== false;
+    if (kind === "brasch") return inv.brasch !== false;
+    return true;
   }
 
   function randomAutomatonStratThreshold() {
@@ -690,6 +810,7 @@
     if (!runObj) return;
     runObj.automatonStratCount = 0;
     runObj.automatonNextAt = randomAutomatonStratThreshold();
+    runObj.automatonWarnUntil = null;
     runObj.automatonUntil = null;
     runObj.illuminatiStratCount = 0;
     runObj.illuminatiNextAt = randomIlluminatiStratThreshold();
@@ -697,15 +818,38 @@
     runObj.illuminatiUntil = null;
     runObj.terminidStratCount = 0;
     runObj.terminidNextAt = randomTerminidStratThreshold();
+    runObj.terminidWarnUntil = null;
     runObj.terminidUntil = null;
     runObj.automatonPlayfieldTransform = "";
   }
 
   function isAutomatonTakeoverActive() {
-    return !!(run && run.active && run.automatonUntil && Date.now() < run.automatonUntil);
+    return !!(
+      run &&
+      run.active &&
+      run.automatonWarnUntil != null &&
+      run.automatonUntil &&
+      Date.now() >= run.automatonWarnUntil &&
+      Date.now() < run.automatonUntil
+    );
   }
 
   function isTerminidTakeoverActive() {
+    return !!(
+      run &&
+      run.active &&
+      run.terminidWarnUntil != null &&
+      run.terminidUntil &&
+      Date.now() >= run.terminidWarnUntil &&
+      Date.now() < run.terminidUntil
+    );
+  }
+
+  function isAutomatonInvasionScheduled() {
+    return !!(run && run.active && run.automatonUntil && Date.now() < run.automatonUntil);
+  }
+
+  function isTerminidInvasionScheduled() {
     return !!(run && run.active && run.terminidUntil && Date.now() < run.terminidUntil);
   }
 
@@ -836,7 +980,23 @@
       ClassicStratagemHero.isActive() &&
       ClassicStratagemHero.getScreen &&
       ClassicStratagemHero.getScreen() === "in_game";
-    if (!classicOn || !run || !run.classicRun || !isIlluminatiInvasionScheduled()) {
+    if (!classicOn || !run || !run.classicRun) {
+      host.hidden = true;
+      banner.hidden = true;
+      timer.hidden = true;
+      banner.classList.remove("illuminate-invasion-banner--blink");
+      return;
+    }
+    const now = Date.now();
+    const warning =
+      (run.illuminatiWarnUntil && now < run.illuminatiWarnUntil && { kind: "illuminate", until: run.illuminatiWarnUntil }) ||
+      (run.automatonWarnUntil && now < run.automatonWarnUntil && { kind: "automaton", until: run.automatonWarnUntil }) ||
+      (run.terminidWarnUntil && now < run.terminidWarnUntil && { kind: "terminid", until: run.terminidWarnUntil });
+    const active =
+      (isIlluminatiInvasionEffectActive() && { kind: "illuminate", until: run.illuminatiUntil }) ||
+      (isAutomatonTakeoverActive() && { kind: "automaton", until: run.automatonUntil }) ||
+      (isTerminidTakeoverActive() && { kind: "terminid", until: run.terminidUntil });
+    if (!warning && !active) {
       host.hidden = true;
       banner.hidden = true;
       timer.hidden = true;
@@ -844,23 +1004,36 @@
       return;
     }
     host.hidden = false;
-    if (isIlluminatiInvasionWarningPhase()) {
+    if (warning) {
       banner.hidden = false;
       timer.hidden = true;
       banner.classList.add("illuminate-invasion-banner--blink");
-      const sec = Math.max(1, Math.ceil((run.illuminatiWarnUntil - Date.now()) / 1000));
-      banner.textContent = t("illuminateInvasionBannerText").replace("{seconds}", String(sec));
+      const sec = Math.max(1, Math.ceil((warning.until - now) / 1000));
+      const key =
+        warning.kind === "automaton"
+          ? "automatonInvasionBannerText"
+          : warning.kind === "terminid"
+            ? "terminidInvasionBannerText"
+            : "illuminateInvasionBannerText";
+      banner.textContent = t(key).replace("{seconds}", String(sec));
     } else {
       banner.hidden = true;
       banner.classList.remove("illuminate-invasion-banner--blink");
       timer.hidden = false;
-      const left = Math.max(0, run.illuminatiUntil - Date.now());
-      timer.textContent = t("illuminateInvasionTimerLeft").replace("{time}", formatSessionLeft(left));
+      const left = Math.max(0, active.until - now);
+      const key =
+        active.kind === "automaton"
+          ? "automatonInvasionTimerLeft"
+          : active.kind === "terminid"
+            ? "terminidInvasionTimerLeft"
+            : "illuminateInvasionTimerLeft";
+      timer.textContent = t(key).replace("{time}", formatSessionLeft(left));
     }
   }
 
   function maybeEndAutomatonTakeover() {
     if (!run || !run.active || !run.automatonUntil || Date.now() < run.automatonUntil) return;
+    run.automatonWarnUntil = null;
     run.automatonUntil = null;
     syncAutomatonTakeoverUi();
     if (run.classicRun) applyGlobalBackgrounds();
@@ -869,6 +1042,7 @@
 
   function maybeEndTerminidTakeover() {
     if (!run || !run.active || !run.terminidUntil || Date.now() < run.terminidUntil) return;
+    run.terminidWarnUntil = null;
     run.terminidUntil = null;
     syncTerminidTakeoverUi();
     if (run.classicRun) applyGlobalBackgrounds();
@@ -885,7 +1059,8 @@
   }
 
   function tryAutomatonTakeoverAfterSuccess() {
-    if (!run || !run.active || isAutomatonTakeoverActive()) return;
+    if (!run || !run.active || isAutomatonInvasionScheduled()) return;
+    if (!isInvasionAllowedInCurrentMode("automaton")) return;
     if (isIlluminatiInvasionScheduled()) return;
     const inv = cfg.classicInvasion || {};
     if (inv.enabled === false) return;
@@ -896,9 +1071,13 @@
     run.automatonNextAt = randomAutomatonStratThreshold();
     const dMin = Math.max(1000, Number(inv.durationMinMs) || 20000);
     const dMax = Math.max(dMin, Number(inv.durationMaxMs) || 40000);
-    run.automatonUntil = Date.now() + dMin + Math.random() * (dMax - dMin);
+    const warnLead = Math.max(0, Math.floor(Number(inv.warnLeadMs) || 0));
+    const t0 = Date.now();
+    run.automatonWarnUntil = t0 + warnLead;
+    run.automatonUntil = run.automatonWarnUntil + dMin + Math.random() * (dMax - dMin);
     run.illuminatiUntil = null;
     run.illuminatiWarnUntil = null;
+    run.terminidWarnUntil = null;
     run.terminidUntil = null;
     syncIlluminatiTakeoverUi();
     syncTerminidTakeoverUi();
@@ -927,6 +1106,7 @@
 
   function tryIlluminatiTakeoverAfterSuccess() {
     if (!run || !run.active || isIlluminatiInvasionScheduled()) return;
+    if (!isInvasionAllowedInCurrentMode("illuminate")) return;
     const inv = cfg.classicIlluminatiInvasion || {};
     if (inv.enabled === false) return;
     if (run.illuminatiNextAt == null) run.illuminatiNextAt = randomIlluminatiStratThreshold();
@@ -942,6 +1122,8 @@
     run.illuminatiWarnUntil = t0 + warnLead;
     run.illuminatiUntil = run.illuminatiWarnUntil + duration;
     run.automatonUntil = null;
+    run.automatonWarnUntil = null;
+    run.terminidWarnUntil = null;
     run.terminidUntil = null;
     syncAutomatonTakeoverUi();
     syncTerminidTakeoverUi();
@@ -949,7 +1131,8 @@
   }
 
   function tryTerminidTakeoverAfterSuccess() {
-    if (!run || !run.active || isTerminidTakeoverActive()) return;
+    if (!run || !run.active || isTerminidInvasionScheduled()) return;
+    if (!isInvasionAllowedInCurrentMode("terminid")) return;
     const inv = cfg.classicTerminidInvasion || {};
     if (inv.enabled === false) return;
     if (run.terminidNextAt == null) run.terminidNextAt = randomTerminidStratThreshold();
@@ -957,13 +1140,17 @@
       run.terminidStratCount = (run.terminidStratCount || 0) + 1;
     }
     if (run.terminidStratCount < run.terminidNextAt) return;
-    if (isAutomatonTakeoverActive() || isIlluminatiInvasionScheduled()) return;
+    if (isAutomatonInvasionScheduled() || isIlluminatiInvasionScheduled()) return;
     run.terminidStratCount = 0;
     run.terminidNextAt = randomTerminidStratThreshold();
     const dMin = Math.max(1000, Number(inv.durationMinMs) || 20000);
     const dMax = Math.max(dMin, Number(inv.durationMaxMs) || 40000);
-    run.terminidUntil = Date.now() + dMin + Math.random() * (dMax - dMin);
+    const warnLead = Math.max(0, Math.floor(Number(inv.warnLeadMs) || 0));
+    const t0 = Date.now();
+    run.terminidWarnUntil = t0 + warnLead;
+    run.terminidUntil = run.terminidWarnUntil + dMin + Math.random() * (dMax - dMin);
     run.automatonUntil = null;
+    run.automatonWarnUntil = null;
     run.illuminatiUntil = null;
     run.illuminatiWarnUntil = null;
     syncAutomatonTakeoverUi();
@@ -973,9 +1160,11 @@
 
   function clearAutomatonTakeoverForRunEnd() {
     if (run) {
+      run.automatonWarnUntil = null;
       run.automatonUntil = null;
       run.illuminatiUntil = null;
       run.illuminatiWarnUntil = null;
+      run.terminidWarnUntil = null;
       run.terminidUntil = null;
     }
     syncAutomatonTakeoverUi();
@@ -1045,17 +1234,23 @@
     return Math.max(0, Math.floor(Number(run && run.solvedStratagems) || 0));
   }
 
+  function getKioskModeFinalScreen(kind) {
+    if (!isKioskMode() || !run || !run.kioskMode || !run.kioskMode.endScreens) return null;
+    const key = kind === "victory" ? "victory" : "defeat";
+    return deepMerge(emptyFinalScreen(), run.kioskMode.endScreens[key] || {});
+  }
+
   /**
    * @param {"defeat"|"victory"} kind
    * @param {number} score
    * @param {number} solvedStratagems
    * @param {{ title?: string, message?: string } | null} fallbacks — i18n strings; message may contain {score}
    */
-  function showFinalScreenModal(kind, score, solvedStratagems, fallbacks) {
+  function showFinalScreenModal(kind, score, solvedStratagems, fallbacks, overrideScreen) {
     const modal = el("gameOverModal");
     if (!modal) return;
     const cfgKey = kind === "victory" ? "endScreenVictory" : "endScreenDefeat";
-    const es = deepMerge(emptyFinalScreen(), cfg[cfgKey] || {});
+    const es = deepMerge(emptyFinalScreen(), overrideScreen || cfg[cfgKey] || {});
     const defaultTitleKey = kind === "victory" ? "finalScreenVictoryDefaultTitle" : "finalScreenDefeatDefaultTitle";
     const defaultScoreKey = kind === "victory" ? "finalScreenVictoryScoreLine" : "finalScreenDefeatScoreLine";
     const scoreLine = t(defaultScoreKey).replace("{score}", String(score));
@@ -1142,17 +1337,17 @@
       showFinalScreenModal("defeat", score, getSolvedStratagemCount(), {
         title: t("kioskLotteryEndTitle"),
         message: t("kioskLotteryEndMsg"),
-      });
+      }, getKioskModeFinalScreen("defeat"));
     } else if (kind === "marathon") {
       showFinalScreenModal("victory", score, getSolvedStratagemCount(), {
         title: t("kioskMarathonEndTitle"),
         message: t("kioskTimedEndMsg"),
-      });
+      }, getKioskModeFinalScreen("victory"));
     } else {
       showFinalScreenModal("victory", score, getSolvedStratagemCount(), {
         title: t("kioskSprintEndTitle"),
         message: t("kioskTimedEndMsg"),
-      });
+      }, getKioskModeFinalScreen("victory"));
     }
   }
 
@@ -1175,7 +1370,7 @@
     showFinalScreenModal("defeat", score, getSolvedStratagemCount(), {
       title: t("kioskPressureEndTitle"),
       message: t("kioskPressureEndMsg"),
-    });
+    }, getKioskModeFinalScreen("defeat"));
   }
 
   function kioskPresetHint(preset) {
@@ -1203,12 +1398,16 @@
     }
     const ph = el("playHint");
     if (ph) ph.hidden = true;
-    lastKioskPreset = preset;
+    const mode = resolveKioskMode(preset);
+    if (!mode || mode.enabled === false) return;
+    lastKioskPreset = mode.id;
+    const topSel = el("kioskModeSelectTop");
+    if (topSel) topSel.value = mode.id;
     hideGameOverModal();
     stopLegacyRunOnly();
     if (typeof ClassicStratagemHero === "undefined") return;
     if (ClassicStratagemHero.isActive()) ClassicStratagemHero.stop();
-    ClassicStratagemHero.start(getClassicKioskOpts(preset));
+    ClassicStratagemHero.start(getClassicKioskOpts(mode.id));
     ClassicStratagemHero.beginFromButton();
     updateKioskArcadeSplash();
   }
@@ -1508,31 +1707,33 @@
   }
 
   function getClassicKioskOpts(preset) {
-    if (preset === "easy") {
+    const mode = resolveKioskMode(preset);
+    const id = mode.id;
+    if (id === "easy") {
       return {
         timeTotal: 999999999,
         renewTimeEachRound: true,
         freezeTimer: true,
         failOnWrong: false,
-        sessionDeadline: null,
+        sessionDeadline: mode.timerEnabled ? Date.now() + mode.timerMs : null,
       };
     }
-    if (preset === "sprint30") {
+    if (id === "sprint30") {
       return {
         timeTotal: 30000,
         renewTimeEachRound: false,
         freezeTimer: false,
         failOnWrong: false,
-        sessionDeadline: Date.now() + 30000,
+        sessionDeadline: mode.timerEnabled ? Date.now() + mode.timerMs : null,
       };
     }
-    if (preset === "lottery") {
+    if (id === "lottery") {
       return {
         timeTotal: 10000,
         renewTimeEachRound: true,
         freezeTimer: false,
         failOnWrong: true,
-        sessionDeadline: null,
+        sessionDeadline: mode.timerEnabled ? Date.now() + mode.timerMs : null,
       };
     }
     return {
@@ -1540,7 +1741,7 @@
       renewTimeEachRound: false,
       freezeTimer: false,
       failOnWrong: false,
-      sessionDeadline: Date.now() + 300000,
+      sessionDeadline: mode.timerEnabled ? Date.now() + mode.timerMs : null,
     };
   }
 
@@ -1553,7 +1754,7 @@
       showFinalScreenModal("defeat", finalScore, getSolvedStratagemCount(), {
         title: t("kioskLotteryEndTitle"),
         message: t("kioskLotteryEndMsg"),
-      });
+      }, getKioskModeFinalScreen("defeat"));
       updateKioskArcadeSplash();
       return;
     }
@@ -1562,7 +1763,7 @@
       showFinalScreenModal("victory", finalScore, getSolvedStratagemCount(), {
         title: t("kioskSprintEndTitle"),
         message: t("kioskTimedEndMsg"),
-      });
+      }, getKioskModeFinalScreen("victory"));
       updateKioskArcadeSplash();
       return;
     }
@@ -1571,13 +1772,31 @@
       showFinalScreenModal("victory", finalScore, getSolvedStratagemCount(), {
         title: t("kioskMarathonEndTitle"),
         message: t("kioskTimedEndMsg"),
-      });
+      }, getKioskModeFinalScreen("victory"));
       updateKioskArcadeSplash();
+      return;
     }
+    const mode = resolveKioskMode(preset);
+    if (reason === "session" && mode && mode.timerEnabled) {
+      ClassicStratagemHero.stop();
+      showFinalScreenModal("victory", finalScore, getSolvedStratagemCount(), {
+        title: t("kioskSprintEndTitle"),
+        message: t("kioskTimedEndMsg"),
+      }, getKioskModeFinalScreen("victory"));
+      updateKioskArcadeSplash();
+      return;
+    }
+    ClassicStratagemHero.stop();
+    showFinalScreenModal("defeat", finalScore, getSolvedStratagemCount(), {
+      title: t("gameOverTitle"),
+      message: t("defeatMaxErrors"),
+    }, getKioskModeFinalScreen("defeat"));
+    updateKioskArcadeSplash();
   }
 
   function initClassicRunStateForNewGame() {
     const preset = isKioskMode() ? lastKioskPreset : null;
+    const kioskMode = preset ? resolveKioskMode(preset) : null;
     run = {
       active: true,
       errors: 0,
@@ -1586,6 +1805,7 @@
       noPenalties: preset === "easy",
       lotteryOneShot: preset === "lottery",
       kioskPreset: preset,
+      kioskMode,
       sessionDeadline: null,
       level: 1,
       solvedStratagems: 0,
@@ -1680,7 +1900,11 @@
       onClassicWrong: classicOnClassicWrong,
       onClassicStratCompleted: classicOnStratCompleted,
       onAfterTick: classicOnAfterTick,
-      getGeneralBraschConfig: () => deepMerge(defaultConfig().generalBrasch, cfg.generalBrasch || {}),
+      getGeneralBraschConfig: () => {
+        const gb = deepMerge(defaultConfig().generalBrasch, cfg.generalBrasch || {});
+        if (!isInvasionAllowedInCurrentMode("brasch")) gb.enabled = false;
+        return gb;
+      },
       getIlluminateRtlInput: () => !!(run && run.classicRun && isIlluminatiInvasionEffectActive()),
       onClassicActiveStratagemChanged: () => bumpAutomatonPlayfieldRandomOrientation(),
     });
@@ -1705,7 +1929,8 @@
     }
     if (ph) ph.hidden = true;
     if (!ClassicStratagemHero.isActive()) {
-      const opts = isKioskMode() ? getClassicKioskOpts(lastKioskPreset || "marathon5") : getNormalClassicOpts();
+      const fallbackMode = (getKioskModes()[0] && getKioskModes()[0].id) || "easy";
+      const opts = isKioskMode() ? getClassicKioskOpts(lastKioskPreset || fallbackMode) : getNormalClassicOpts();
       ClassicStratagemHero.start(opts);
     }
   }
@@ -1736,7 +1961,11 @@
 
   function gameRules() {
     const d = defaultConfig().gameRules;
-    return { ...d, ...(cfg.gameRules || {}) };
+    const out = { ...d, ...(cfg.gameRules || {}) };
+    if (isKioskMode() && run && run.kioskMode) {
+      out.maxErrors = Math.max(0, Math.floor(Number(run.kioskMode.lives) || 0));
+    }
+    return out;
   }
 
   function updateTimerHud() {
@@ -1975,7 +2204,7 @@
       const d = Math.max(800, Math.min(120000, Number(cfg.kioskAutoRestartDelayMs) || 4000));
       kioskAutoRestartTimer = setTimeout(() => {
         kioskAutoRestartTimer = null;
-        if (!document.hidden) startKioskRun(lastKioskPreset || "marathon5");
+        if (!document.hidden) startKioskRun(lastKioskPreset || ((getKioskModes()[0] && getKioskModes()[0].id) || "easy"));
       }, d);
       return;
     }
@@ -2319,7 +2548,7 @@
           cancelKioskAutoRestart();
           hideGameOverModal();
           if (isKioskMode()) {
-            startKioskRun(lastKioskPreset || "marathon5");
+            startKioskRun(lastKioskPreset || ((getKioskModes()[0] && getKioskModes()[0].id) || "easy"));
           } else {
             startRunClick();
           }
@@ -2340,7 +2569,7 @@
         }
         if (pressed) {
           e.preventDefault();
-          startKioskRun(lastKioskPreset || "marathon5");
+          startKioskRun(lastKioskPreset || ((getKioskModes()[0] && getKioskModes()[0].id) || "easy"));
           playStratagemDirectionSound(pressed);
           return;
         }
@@ -2544,6 +2773,8 @@
     if (invDmin) invDmin.value = String(Math.max(1000, Math.floor(Number(inv.durationMinMs) || invDef.durationMinMs)));
     const invDmax = el("invasionDurationMaxMs");
     if (invDmax) invDmax.value = String(Math.max(1000, Math.floor(Number(inv.durationMaxMs) || invDef.durationMaxMs)));
+    const invWarn = el("invasionWarnLeadMs");
+    if (invWarn) invWarn.value = String(Math.max(0, Math.floor(Number(inv.warnLeadMs) || 0)));
     const invPri = el("invasionPriority");
     if (invPri) {
       const p = cfg.classicInvasionPriority;
@@ -2562,6 +2793,8 @@
     if (terDmin) terDmin.value = String(Math.max(1000, Math.floor(Number(ter.durationMinMs) || terDef.durationMinMs)));
     const terDmax = el("terminidInvasionDurationMaxMs");
     if (terDmax) terDmax.value = String(Math.max(1000, Math.floor(Number(ter.durationMaxMs) || terDef.durationMaxMs)));
+    const terWarn = el("terminidInvasionWarnLeadMs");
+    if (terWarn) terWarn.value = String(Math.max(0, Math.floor(Number(ter.warnLeadMs) || 0)));
     const terFogMin = el("terminidInvasionFogOpacityMin");
     if (terFogMin) terFogMin.value = String(clampTerminidFogOpacity(ter.fogOpacityMin, terDef.fogOpacityMin));
     const terFogMax = el("terminidInvasionFogOpacityMax");
@@ -2595,6 +2828,8 @@
     if (gbN) gbN.value = String(Math.max(1, Math.floor(Number(gb.everyNStratagems) || gbDef.everyNStratagems)));
     const gbDur = el("generalBraschDurationMs");
     if (gbDur) gbDur.value = String(Math.max(1000, Math.floor(Number(gb.durationMs) || gbDef.durationMs)));
+    const gbWarn = el("generalBraschWarnLeadMs");
+    if (gbWarn) gbWarn.value = String(Math.max(0, Math.floor(Number(gb.warnLeadMs) || 0)));
     const gbUrl = el("generalBraschAnthemUrl");
     if (gbUrl) gbUrl.value = gb.anthemUrl || "";
     const gbVol = el("generalBraschAnthemVolume");
@@ -2640,6 +2875,8 @@
     if (kardEl) kardEl.value = String(Math.max(800, Number(cfg.kioskAutoRestartDelayMs) || 4000));
     const defKiosk = el("defaultKiosk");
     if (defKiosk) defKiosk.checked = cfg.defaultKiosk !== false;
+    const kdas = el("kioskDisableAutoStart");
+    if (kdas) kdas.checked = !!cfg.kioskDisableAutoStart;
     renderBindings();
     renderLevelRows();
     syncDirectionSoundsMuteUi();
@@ -2700,6 +2937,177 @@
       row.appendChild(input);
       wrap.appendChild(row);
     });
+  }
+
+  function syncKioskModeEditorSelect() {
+    const sel = el("editorKioskModeSelect");
+    if (!sel) return;
+    const prev = sel.value;
+    sel.innerHTML = "";
+    getKioskModes().forEach((m) => {
+      const opt = document.createElement("option");
+      opt.value = m.id;
+      opt.textContent = `${m.name} (${m.id})`;
+      sel.appendChild(opt);
+    });
+    if (!sel.options.length) return;
+    sel.value = Array.from(sel.options).some((o) => o.value === prev) ? prev : sel.options[0].value;
+    loadKioskModeEditorForm(sel.value);
+  }
+
+  function loadKioskModeEditorForm(modeId) {
+    const mode = resolveKioskMode(modeId);
+    const name = el("editorKioskModeName");
+    if (name) name.value = mode.name;
+    const en = el("editorKioskModeEnabled");
+    if (en) en.checked = mode.enabled !== false;
+    const lives = el("editorKioskModeLives");
+    if (lives) lives.value = String(mode.lives);
+    const tEn = el("editorKioskModeTimerEnabled");
+    if (tEn) tEn.checked = !!mode.timerEnabled;
+    const tMs = el("editorKioskModeTimerMs");
+    if (tMs) tMs.value = String(mode.timerMs);
+    const inv = mode.invasions || {};
+    const a = el("editorKioskModeInvAutomaton");
+    if (a) a.checked = inv.automaton !== false;
+    const i = el("editorKioskModeInvIlluminate");
+    if (i) i.checked = inv.illuminate !== false;
+    const t = el("editorKioskModeInvTerminid");
+    if (t) t.checked = inv.terminid !== false;
+    const b = el("editorKioskModeInvBrasch");
+    if (b) b.checked = inv.brasch !== false;
+    const ds = deepMerge(emptyFinalScreen(), (mode.endScreens && mode.endScreens.defeat) || {});
+    const vs = deepMerge(emptyFinalScreen(), (mode.endScreens && mode.endScreens.victory) || {});
+    if (el("editorKioskDefeatTitle")) el("editorKioskDefeatTitle").value = ds.title || "";
+    if (el("editorKioskDefeatMessage")) el("editorKioskDefeatMessage").value = ds.message || "";
+    if (el("editorKioskDefeatLinkUrl")) el("editorKioskDefeatLinkUrl").value = ds.linkUrl || "";
+    if (el("editorKioskDefeatLinkText")) el("editorKioskDefeatLinkText").value = ds.linkText || "";
+    if (el("editorKioskDefeatShowQr")) el("editorKioskDefeatShowQr").checked = ds.showQr !== false;
+    if (el("editorKioskDefeatQrUrl")) el("editorKioskDefeatQrUrl").value = ds.qrUrl || "";
+    if (el("editorKioskDefeatImageFile")) el("editorKioskDefeatImageFile").value = "";
+    if (el("editorKioskVictoryTitle")) el("editorKioskVictoryTitle").value = vs.title || "";
+    if (el("editorKioskVictoryMessage")) el("editorKioskVictoryMessage").value = vs.message || "";
+    if (el("editorKioskVictoryLinkUrl")) el("editorKioskVictoryLinkUrl").value = vs.linkUrl || "";
+    if (el("editorKioskVictoryLinkText")) el("editorKioskVictoryLinkText").value = vs.linkText || "";
+    if (el("editorKioskVictoryShowQr")) el("editorKioskVictoryShowQr").checked = vs.showQr !== false;
+    if (el("editorKioskVictoryQrUrl")) el("editorKioskVictoryQrUrl").value = vs.qrUrl || "";
+    if (el("editorKioskVictoryImageFile")) el("editorKioskVictoryImageFile").value = "";
+  }
+
+  function readImageInputFileDataUrl(inputId) {
+    const inp = el(inputId);
+    if (!inp || !inp.files || !inp.files[0]) return Promise.resolve(null);
+    const file = inp.files[0];
+    return new Promise((resolve) => {
+      const fr = new FileReader();
+      fr.onload = () => resolve(typeof fr.result === "string" ? fr.result : null);
+      fr.onerror = () => resolve(null);
+      fr.readAsDataURL(file);
+    });
+  }
+
+  async function saveKioskModeFromEditor() {
+    const sel = el("editorKioskModeSelect");
+    if (!sel) return;
+    const id = sel.value;
+    const modes = getKioskModes();
+    const idx = modes.findIndex((m) => m.id === id);
+    if (idx < 0) return;
+    const prev = modes[idx];
+    const defeatImg = await readImageInputFileDataUrl("editorKioskDefeatImageFile");
+    const victoryImg = await readImageInputFileDataUrl("editorKioskVictoryImageFile");
+    modes[idx] = normalizeKioskMode(
+      {
+        id,
+        name: (el("editorKioskModeName")?.value || id).trim(),
+        enabled: !!el("editorKioskModeEnabled")?.checked,
+        lives: Math.max(0, Math.floor(Number(el("editorKioskModeLives")?.value) || 0)),
+        timerEnabled: !!el("editorKioskModeTimerEnabled")?.checked,
+        timerMs: Math.max(1000, Math.floor(Number(el("editorKioskModeTimerMs")?.value) || 30000)),
+        invasions: {
+          automaton: !!el("editorKioskModeInvAutomaton")?.checked,
+          illuminate: !!el("editorKioskModeInvIlluminate")?.checked,
+          terminid: !!el("editorKioskModeInvTerminid")?.checked,
+          brasch: !!el("editorKioskModeInvBrasch")?.checked,
+        },
+        endScreens: {
+          defeat: {
+            title: (el("editorKioskDefeatTitle")?.value || "").trim(),
+            message: (el("editorKioskDefeatMessage")?.value || "").trim(),
+            linkUrl: (el("editorKioskDefeatLinkUrl")?.value || "").trim(),
+            linkText: (el("editorKioskDefeatLinkText")?.value || "").trim(),
+            showQr: !!el("editorKioskDefeatShowQr")?.checked,
+            qrUrl: (el("editorKioskDefeatQrUrl")?.value || "").trim(),
+            imageDataUrl:
+              defeatImg != null
+                ? defeatImg
+                : deepMerge(emptyFinalScreen(), (prev.endScreens && prev.endScreens.defeat) || {}).imageDataUrl || "",
+          },
+          victory: {
+            title: (el("editorKioskVictoryTitle")?.value || "").trim(),
+            message: (el("editorKioskVictoryMessage")?.value || "").trim(),
+            linkUrl: (el("editorKioskVictoryLinkUrl")?.value || "").trim(),
+            linkText: (el("editorKioskVictoryLinkText")?.value || "").trim(),
+            showQr: !!el("editorKioskVictoryShowQr")?.checked,
+            qrUrl: (el("editorKioskVictoryQrUrl")?.value || "").trim(),
+            imageDataUrl:
+              victoryImg != null
+                ? victoryImg
+                : deepMerge(emptyFinalScreen(), (prev.endScreens && prev.endScreens.victory) || {}).imageDataUrl || "",
+          },
+        },
+      },
+      id
+    );
+    cfg.kioskModes = modes;
+    saveConfig(cfg);
+    renderKioskModeButtons();
+    syncKioskModeEditorSelect();
+  }
+
+  function createKioskModeFromEditor() {
+    const modes = getKioskModes();
+    let id;
+    do {
+      id = `mode_${kioskModeDraftSeq++}`;
+    } while (modes.some((m) => m.id === id));
+    modes.push(
+      normalizeKioskMode(
+        {
+          id,
+          name: `Mode ${kioskModeDraftSeq - 1}`,
+          enabled: true,
+          lives: 3,
+          timerEnabled: true,
+          timerMs: 60000,
+          invasions: { automaton: true, illuminate: true, terminid: true, brasch: true },
+        },
+        id
+      )
+    );
+    cfg.kioskModes = modes;
+    saveConfig(cfg);
+    renderKioskModeButtons();
+    syncKioskModeEditorSelect();
+    const sel = el("editorKioskModeSelect");
+    if (sel) {
+      sel.value = id;
+      loadKioskModeEditorForm(id);
+    }
+  }
+
+  function deleteKioskModeFromEditor() {
+    const sel = el("editorKioskModeSelect");
+    if (!sel) return;
+    const id = sel.value;
+    let modes = getKioskModes();
+    if (modes.length <= 1) return;
+    modes = modes.filter((m) => m.id !== id);
+    cfg.kioskModes = modes;
+    if (lastKioskPreset === id) lastKioskPreset = modes[0].id;
+    saveConfig(cfg);
+    renderKioskModeButtons();
+    syncKioskModeEditorSelect();
   }
 
   function applyEditorOverride() {
@@ -2767,6 +3175,7 @@
       showPanel("editor");
       syncEditorStratSelect();
       loadEditorStrat();
+      syncKioskModeEditorSelect();
     });
 
     const btnStartRun = el("btnStartRun");
@@ -2824,6 +3233,13 @@
     if (defKioskCb) {
       defKioskCb.addEventListener("change", () => {
         cfg.defaultKiosk = defKioskCb.checked;
+        saveConfig(cfg);
+      });
+    }
+    const kdas = el("kioskDisableAutoStart");
+    if (kdas) {
+      kdas.addEventListener("change", () => {
+        cfg.kioskDisableAutoStart = kdas.checked;
         saveConfig(cfg);
       });
     }
@@ -2894,17 +3310,21 @@
       if (dmax < dmin) dmax = dmin;
       cfg.classicInvasion.durationMinMs = dmin;
       cfg.classicInvasion.durationMaxMs = dmax;
+      const w = Math.max(0, Math.floor(Number(el("invasionWarnLeadMs")?.value) || 0));
+      cfg.classicInvasion.warnLeadMs = w;
       const iMin = el("invasionSuccessesMin");
       const iMax = el("invasionSuccessesMax");
       const dm = el("invasionDurationMinMs");
       const dx = el("invasionDurationMaxMs");
+      const wEl = el("invasionWarnLeadMs");
       if (iMin) iMin.value = String(mn);
       if (iMax) iMax.value = String(mx);
       if (dm) dm.value = String(dmin);
       if (dx) dx.value = String(dmax);
+      if (wEl) wEl.value = String(w);
       saveConfig(cfg);
     }
-    ["invasionSuccessesMin", "invasionSuccessesMax", "invasionDurationMinMs", "invasionDurationMaxMs"].forEach((id) => {
+    ["invasionSuccessesMin", "invasionSuccessesMax", "invasionDurationMinMs", "invasionDurationMaxMs", "invasionWarnLeadMs"].forEach((id) => {
       const node = el(id);
       if (!node) return;
       node.addEventListener("change", persistClassicInvasionFromForm);
@@ -2968,6 +3388,8 @@
       if (dmax < dmin) dmax = dmin;
       cfg.classicTerminidInvasion.durationMinMs = dmin;
       cfg.classicTerminidInvasion.durationMaxMs = dmax;
+      const wlead = Math.max(0, Math.floor(Number(el("terminidInvasionWarnLeadMs")?.value) || 0));
+      cfg.classicTerminidInvasion.warnLeadMs = wlead;
       let fmin = clampTerminidFogOpacity(el("terminidInvasionFogOpacityMin")?.value, d.fogOpacityMin);
       let fmax = clampTerminidFogOpacity(el("terminidInvasionFogOpacityMax")?.value, d.fogOpacityMax);
       if (fmax < fmin) [fmin, fmax] = [fmax, fmin];
@@ -2981,6 +3403,7 @@
       const iMax = el("terminidInvasionSuccessesMax");
       const dm = el("terminidInvasionDurationMinMs");
       const dx = el("terminidInvasionDurationMaxMs");
+      const wl = el("terminidInvasionWarnLeadMs");
       const fm = el("terminidInvasionFogOpacityMin");
       const fx = el("terminidInvasionFogOpacityMax");
       const pEl = el("terminidInvasionFogPulsePeriodMs");
@@ -2988,6 +3411,7 @@
       if (iMax) iMax.value = String(mx);
       if (dm) dm.value = String(dmin);
       if (dx) dx.value = String(dmax);
+      if (wl) wl.value = String(wlead);
       if (fm) fm.value = String(fmin);
       if (fx) fx.value = String(fmax);
       if (pEl) pEl.value = String(pulse);
@@ -2999,6 +3423,7 @@
       "terminidInvasionSuccessesMax",
       "terminidInvasionDurationMinMs",
       "terminidInvasionDurationMaxMs",
+      "terminidInvasionWarnLeadMs",
       "terminidInvasionFogOpacityMin",
       "terminidInvasionFogOpacityMax",
       "terminidInvasionFogPulsePeriodMs",
@@ -3016,25 +3441,29 @@
       if (en) cfg.generalBrasch.enabled = en.checked;
       const n = Math.max(1, Math.floor(Number(el("generalBraschEveryN")?.value) || d.everyNStratagems));
       const dur = Math.max(1000, Math.floor(Number(el("generalBraschDurationMs")?.value) || d.durationMs));
+      const warn = Math.max(0, Math.floor(Number(el("generalBraschWarnLeadMs")?.value) || 0));
       const anthemVolRaw = Number(el("generalBraschAnthemVolume")?.value);
       const anthemVol = Number.isFinite(anthemVolRaw) ? Math.max(0, Math.min(1, anthemVolRaw)) : d.anthemVolume;
       cfg.generalBrasch.everyNStratagems = n;
       cfg.generalBrasch.durationMs = dur;
+      cfg.generalBrasch.warnLeadMs = warn;
       cfg.generalBrasch.anthemUrl = (el("generalBraschAnthemUrl")?.value || "").trim();
       cfg.generalBrasch.anthemVolume = anthemVol;
       cfg.generalBrasch.portraitUrl = (el("generalBraschPortraitUrl")?.value || "").trim();
       const gbN = el("generalBraschEveryN");
       const gbDur = el("generalBraschDurationMs");
+      const gbWarn = el("generalBraschWarnLeadMs");
       const gbVol = el("generalBraschAnthemVolume");
       if (gbN) gbN.value = String(n);
       if (gbDur) gbDur.value = String(dur);
+      if (gbWarn) gbWarn.value = String(warn);
       if (gbVol) gbVol.value = String(anthemVol);
       if (typeof ClassicStratagemHero !== "undefined" && ClassicStratagemHero.setBraschAnthemVolume01) {
         ClassicStratagemHero.setBraschAnthemVolume01(anthemVol);
       }
       saveConfig(cfg);
     }
-    ["generalBraschEnabled", "generalBraschEveryN", "generalBraschDurationMs", "generalBraschAnthemVolume"].forEach((id) => {
+    ["generalBraschEnabled", "generalBraschEveryN", "generalBraschDurationMs", "generalBraschWarnLeadMs", "generalBraschAnthemVolume"].forEach((id) => {
       const node = el(id);
       if (!node) return;
       node.addEventListener("change", persistGeneralBraschFromForm);
@@ -3323,12 +3752,51 @@
     el("editorStratSelect").addEventListener("change", loadEditorStrat);
     el("editorApply").addEventListener("click", applyEditorOverride);
     el("editorReset").addEventListener("click", resetEditorOverride);
+    el("kioskModeApplyTop")?.addEventListener("click", () => {
+      const sel = el("kioskModeSelectTop");
+      if (!sel || !sel.value) return;
+      startKioskRun(sel.value);
+    });
+    el("editorKioskModeSelect")?.addEventListener("change", () => {
+      loadKioskModeEditorForm(el("editorKioskModeSelect").value);
+    });
+    el("editorKioskModeApply")?.addEventListener("click", saveKioskModeFromEditor);
+    el("editorKioskModeNew")?.addEventListener("click", createKioskModeFromEditor);
+    el("editorKioskModeDelete")?.addEventListener("click", deleteKioskModeFromEditor);
+    el("editorKioskDefeatImageClear")?.addEventListener("click", () => {
+      const sel = el("editorKioskModeSelect");
+      if (!sel) return;
+      const modes = getKioskModes();
+      const idx = modes.findIndex((m) => m.id === sel.value);
+      if (idx < 0) return;
+      const prev = modes[idx];
+      const ds = deepMerge(emptyFinalScreen(), (prev.endScreens && prev.endScreens.defeat) || {});
+      ds.imageDataUrl = "";
+      prev.endScreens = prev.endScreens || {};
+      prev.endScreens.defeat = ds;
+      modes[idx] = normalizeKioskMode(prev, prev.id);
+      cfg.kioskModes = modes;
+      saveConfig(cfg);
+      loadKioskModeEditorForm(sel.value);
+    });
+    el("editorKioskVictoryImageClear")?.addEventListener("click", () => {
+      const sel = el("editorKioskModeSelect");
+      if (!sel) return;
+      const modes = getKioskModes();
+      const idx = modes.findIndex((m) => m.id === sel.value);
+      if (idx < 0) return;
+      const prev = modes[idx];
+      const vs = deepMerge(emptyFinalScreen(), (prev.endScreens && prev.endScreens.victory) || {});
+      vs.imageDataUrl = "";
+      prev.endScreens = prev.endScreens || {};
+      prev.endScreens.victory = vs;
+      modes[idx] = normalizeKioskMode(prev, prev.id);
+      cfg.kioskModes = modes;
+      saveConfig(cfg);
+      loadKioskModeEditorForm(sel.value);
+    });
 
     el("kioskBtnRestart").addEventListener("click", () => startKioskRun(lastKioskPreset));
-    el("kioskBtnEasy").addEventListener("click", () => startKioskRun("easy"));
-    el("kioskBtnSprint").addEventListener("click", () => startKioskRun("sprint30"));
-    el("kioskBtnLottery").addEventListener("click", () => startKioskRun("lottery"));
-    el("kioskBtnMarathon").addEventListener("click", () => startKioskRun("marathon5"));
 
     const btnKiosk = el("btnKiosk");
     if (btnKiosk) {
@@ -3378,11 +3846,13 @@
     ensureDefaultKioskFromConfig();
     syncKioskLayout();
     wireUi();
+    renderKioskModeButtons();
     initDirButtons();
     hideGameOverModal();
     applyI18nDom();
     syncSettingsForm();
     syncEditorStratSelect();
+    syncKioskModeEditorSelect();
     applyTheme();
     applyGlobalBackgrounds();
     applyTerminalBackground();

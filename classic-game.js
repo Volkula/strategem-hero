@@ -90,6 +90,7 @@
   let completedStratagemCount = 0;
   /** `Date.now()` until which round timer is frozen and Brasch UI is active. */
   let braschModeUntil = 0;
+  let braschWarnUntil = 0;
   let anthemHowl = null;
   /** Multiplier for anthem loudness against current master volume (0..1). */
   let anthemVolumeMul = 1;
@@ -99,6 +100,7 @@
       enabled: true,
       everyNStratagems: 50,
       durationMs: 10000,
+      warnLeadMs: 0,
       anthemUrl: "",
       anthemVolume: 1,
       portraitUrl: "",
@@ -109,6 +111,7 @@
       enabled: c.enabled !== false,
       everyNStratagems: Math.max(1, Math.floor(Number(c.everyNStratagems)) || 50),
       durationMs: Math.max(1000, Math.floor(Number(c.durationMs)) || 10000),
+      warnLeadMs: Math.max(0, Math.floor(Number(c.warnLeadMs) || 0)),
       anthemUrl: String(c.anthemUrl || "").trim(),
       portraitUrl: String(c.portraitUrl || "").trim(),
       anthemVolume: Math.max(0, Math.min(1, Number.isFinite(Number(c.anthemVolume)) ? Number(c.anthemVolume) : 1)),
@@ -194,6 +197,11 @@
 
   function clearBraschLeavingPlay() {
     braschModeUntil = 0;
+    braschWarnUntil = 0;
+    if (els.braschWarnBanner) {
+      els.braschWarnBanner.hidden = true;
+      els.braschWarnBanner.classList.remove("illuminate-invasion-banner--blink");
+    }
     endBraschMode(false, true);
   }
 
@@ -250,6 +258,16 @@
     updateTimerLabel();
   }
 
+  function scheduleBraschMode(bc) {
+    if (!bc || !bc.enabled || !active || screen !== "in_game") return;
+    const lead = Math.max(0, Math.floor(Number(bc.warnLeadMs) || 0));
+    if (lead <= 0) {
+      startBraschMode(bc);
+      return;
+    }
+    braschWarnUntil = Date.now() + lead;
+  }
+
   function updateComboHud() {
     const wrap = els.comboWrap;
     if (!wrap) return;
@@ -267,6 +285,21 @@
           ? tFn("classicComboHud").replace("{n}", String(n)).replace("{goal}", String(goal))
           : `${n} / ${goal}`;
     }
+  }
+
+  function updateBraschWarningUi() {
+    const node = els.braschWarnBanner;
+    if (!node) return;
+    if (!active || screen !== "in_game" || !braschWarnUntil || Date.now() >= braschWarnUntil) {
+      node.hidden = true;
+      node.classList.remove("illuminate-invasion-banner--blink");
+      return;
+    }
+    const sec = Math.max(1, Math.ceil((braschWarnUntil - Date.now()) / 1000));
+    node.hidden = false;
+    node.classList.add("illuminate-invasion-banner--blink");
+    node.textContent =
+      typeof tFn === "function" ? tFn("braschWarningBannerText").replace("{seconds}", String(sec)) : `BRASCH IN ${sec}s`;
   }
 
   function updateSolvedCounters() {
@@ -705,6 +738,12 @@
   }
 
   function loopInGame() {
+    updateBraschWarningUi();
+    if (braschWarnUntil && Date.now() >= braschWarnUntil) {
+      braschWarnUntil = 0;
+      const bc2 = getBraschCfg();
+      startBraschMode(bc2);
+    }
     if (!isBraschActive() && root && root.classList.contains("classic-game--brasch")) {
       endBraschMode(true, false);
     }
@@ -764,7 +803,7 @@
         completedStratagemCount > 0 &&
         completedStratagemCount % bc.everyNStratagems === 0
       ) {
-        startBraschMode(bc);
+        scheduleBraschMode(bc);
       }
       if (roundJustEnded && isBraschActive()) {
         buildQueue();
@@ -896,6 +935,7 @@
         comboHud: root.querySelector("#classicComboHud"),
         braschPortraitWrap: root.querySelector("#classicBraschPortraitWrap"),
         braschPortrait: root.querySelector("#classicBraschPortrait"),
+        braschWarnBanner: root.querySelector("#classicBraschWarnBanner"),
       };
       ensureHowls();
       const v0 = typeof options.initialVolume === "number" ? options.initialVolume : 0.82;

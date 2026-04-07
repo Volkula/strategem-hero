@@ -87,6 +87,7 @@
         successesMax: 12,
         durationMinMs: 20000,
         durationMaxMs: 40000,
+        warnLeadMs: 4000,
       },
       /** Illuminate / Illuminati-style overlay (same mechanic, separate streak). */
       classicIlluminatiInvasion: {
@@ -105,6 +106,7 @@
         successesMax: 12,
         durationMinMs: 20000,
         durationMaxMs: 40000,
+        warnLeadMs: 4000,
         /** Layer opacity oscillates between these (0–1). */
         fogOpacityMin: 0.4,
         fogOpacityMax: 0.8,
@@ -117,6 +119,46 @@
       classicInvasionPriority: "automaton",
       /** Add ?kiosk=1 on load when the URL has no kiosk flag (disable in Settings). */
       defaultKiosk: true,
+      /** In kiosk mode, do not auto-start a run; keep the normal Start game screen. */
+      kioskDisableAutoStart: false,
+      kioskModes: [
+        {
+          id: "easy",
+          name: "Easy",
+          enabled: true,
+          lives: 0,
+          timerEnabled: false,
+          timerMs: 0,
+          invasions: { automaton: true, illuminate: true, terminid: true, brasch: true },
+        },
+        {
+          id: "sprint30",
+          name: "Sprint (30s)",
+          enabled: true,
+          lives: 3,
+          timerEnabled: true,
+          timerMs: 30000,
+          invasions: { automaton: true, illuminate: true, terminid: true, brasch: true },
+        },
+        {
+          id: "lottery",
+          name: "Lottery",
+          enabled: true,
+          lives: 1,
+          timerEnabled: false,
+          timerMs: 0,
+          invasions: { automaton: true, illuminate: true, terminid: true, brasch: true },
+        },
+        {
+          id: "marathon5",
+          name: "Marathon (5 min)",
+          enabled: true,
+          lives: 3,
+          timerEnabled: true,
+          timerMs: 300000,
+          invasions: { automaton: true, illuminate: true, terminid: true, brasch: true },
+        },
+      ],
       endScreenDefeat: {
         title: "",
         message: "",
@@ -152,6 +194,7 @@
         enabled: true,
         everyNStratagems: 50,
         durationMs: 10000,
+        warnLeadMs: 4000,
         anthemUrl: DEFAULT_BRASCH_ANTHEM_PATH,
         anthemVolume: 0.75,
         portraitUrl: DEFAULT_BRASCH_PORTRAIT_PATH,
