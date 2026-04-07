@@ -1036,6 +1036,13 @@
     setDirectionSfxMuted(muted) {
       directionSfxMuted = !!muted;
     },
+    triggerBraschNow() {
+      if (!active || screen !== "in_game") return;
+      const bc = getBraschCfg();
+      if (!bc || !bc.enabled) return;
+      scheduleBraschMode(bc);
+      updateBraschWarningUi();
+    },
     getVolume01() {
       return typeof Howler !== "undefined" ? Howler.volume() : 0.82;
     },

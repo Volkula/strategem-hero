@@ -37,6 +37,7 @@ The trainer uses a **classic** loop inspired by StratagemHero.com (`classic-game
 - **Keyboard:** arrows and **W A S D** (see `KEY_MAP` / `code` in `classic-game.js`). **Space** can start/restart on start or post–game-over when allowed.
 - **Touch:** **swipes** on the playfield (when swipes are enabled in Settings) map to the same letters. There is no on-screen D-pad or Start/End bar on the playfield.
 - **Volume:** slider in the classic shell; stored as `cfg.sfxVolume` (0–1).
+- **Debug hotkeys (in-game):** `iii` = Automaton invasion, `kkk` = Terminid invasion, `mmm` = Illuminate invasion, `iddqd` = General Brasch burst.
 
 ### Normal play (`getNormalClassicOpts`)
 
@@ -103,6 +104,7 @@ Shipped game resources (Howler, classic MP3s, header logo, favicon) live under *
 - **Клавиатура:** стрелки и **W A S D** (см. `KEY_MAP` в `classic-game.js`). **Пробел** — старт / перезапуск там, где это разрешено логикой экрана.
 - **Сенсор:** **свайпы** по полю (если включены в настройках) дают те же буквы направления. Встроенного D-pad и полосы «Старт/Стоп» на экране игры нет.
 - **Громкость:** ползунок в классической оболочке; в конфиге `cfg.sfxVolume` (0–1).
+- **Отладочные хоткеи (в игре):** `iii` = вторжение автоматонов, `kkk` = вторжение терминидов, `mmm` = вторжение Illuminate, `iddqd` = вспышка Генерала Браша.
 
 ### Обычная игра (`getNormalClassicOpts`)
 

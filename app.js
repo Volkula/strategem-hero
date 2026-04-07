@@ -1196,6 +1196,13 @@
       syncAutomatonTakeoverUi();
       syncTerminidTakeoverUi();
       syncIlluminatiTakeoverUi();
+      return;
+    }
+    if (kind === "brasch") {
+      if (!isInvasionAllowedInCurrentMode("brasch")) return;
+      if (typeof ClassicStratagemHero !== "undefined" && ClassicStratagemHero.triggerBraschNow) {
+        ClassicStratagemHero.triggerBraschNow();
+      }
     }
   }
 
@@ -2617,7 +2624,7 @@
       const now = Date.now();
       if (now - invasionHotkeyTs > 1200) invasionHotkeyBuffer = "";
       invasionHotkeyTs = now;
-      invasionHotkeyBuffer = (invasionHotkeyBuffer + e.key.toLowerCase()).slice(-3);
+      invasionHotkeyBuffer = (invasionHotkeyBuffer + e.key.toLowerCase()).slice(-5);
       if (invasionHotkeyBuffer === "iii") {
         forceInvasion("automaton");
         invasionHotkeyBuffer = "";
@@ -2626,6 +2633,9 @@
         invasionHotkeyBuffer = "";
       } else if (invasionHotkeyBuffer === "mmm") {
         forceInvasion("illuminate");
+        invasionHotkeyBuffer = "";
+      } else if (invasionHotkeyBuffer === "iddqd") {
+        forceInvasion("brasch");
         invasionHotkeyBuffer = "";
       }
     }

@@ -69,7 +69,7 @@
         "Press Play, then any direction key or the Start button to begin. On phones, use Start — swipes on the playfield apply during play, not on the title screen. Classic SFX and music volume is on the slider in the game header.",
       helpSectionInvasionsTitle: "Invasions (optional modifiers)",
       helpSectionInvasionsIntro:
-        "After enough successful stratagems in a row, a timed invasion may start. Each faction has its own streak counter; only one invasion is active at a time. Use Settings → Classic invasions to enable factions and set order; use each faction’s section for timings and fog.",
+        "After enough successful stratagems in a row, a timed invasion may start. Each faction has its own streak counter; only one invasion is active at a time. Use Settings → Classic invasions to enable factions and set order; use each faction’s section for timings and fog. Debug hotkeys: iii (Automatons), kkk (Terminids), mmm (Illuminate).",
       helpInvasionAutomaton:
         "Automaton — Cyberstan-style red UI and font, watermark. During the effect the whole playfield may flip or rotate in a random way, changing again with each new stratagem.",
       helpInvasionIlluminate:
@@ -78,7 +78,7 @@
         "Terminid — a semi-transparent spore fog is drawn over the playfield; opacity pulses between the minimum and maximum you set (defaults 40–80%).",
       helpSectionBraschTitle: "General Brasch burst",
       helpSectionBraschBody:
-        "Every N successful stratagems (default 50), a short burst runs: larger UI, optional anthem, portrait banner, and the round timer pauses. If a round would end during the burst, new stratagems keep coming until the burst timer ends. Configure N, duration, and media URLs under Settings.",
+        "Every N successful stratagems (default 50), a short burst runs: larger UI, optional anthem, portrait banner, and the round timer pauses. If a round would end during the burst, new stratagems keep coming until the burst timer ends. Configure N, duration, and media URLs under Settings. Debug hotkey: iddqd.",
       helpSectionKioskTitle: "Kiosk / festival modes",
       helpSectionKioskBody:
         "Kiosk mode (?kiosk=1) offers presets: Easy (no harsh penalties), Sprint (score in 30 seconds), Lottery (one mistake ends the run), Marathon (5 minute session). A pressure-style timer may drain between codes in some presets. Optional auto-restart after the final screen is in Settings.",
@@ -361,7 +361,7 @@
         "Нажмите «Игра», затем любую клавишу направления или кнопку «Старт». На телефоне для начала раунда используйте «Старт» — свайпы по полю действуют во время игры, а не на титульном экране. Громкость SFX и музыки — ползунок в шапке игры.",
       helpSectionInvasionsTitle: "Вторжения (дополнительные модификаторы)",
       helpSectionInvasionsIntro:
-        "После серии успешных стратегем может начаться ограниченное по времени «вторжение». У каждой фракции свой счётчик; активно только одно вторжение. В настройках раздел «Классические вторжения» — вкл./выкл. фракций и порядок; длительность, серии и туман — в разделах фракций.",
+        "После серии успешных стратегем может начаться ограниченное по времени «вторжение». У каждой фракции свой счётчик; активно только одно вторжение. В настройках раздел «Классические вторжения» — вкл./выкл. фракций и порядок; длительность, серии и туман — в разделах фракций. Отладочные хоткеи: iii (автоматоны), kkk (терминиды), mmm (Illuminate).",
       helpInvasionAutomaton:
         "Автоматоны — красноватый интерфейс в духе Киберстана, водяной знак. Поле может зеркалиться или поворачиваться случайным образом и меняться при каждой новой стратегеме.",
       helpInvasionIlluminate:
@@ -370,7 +370,7 @@
         "Терминиды — полупрозрачный споровый туман поверх поля; непрозрачность пульсирует между заданным минимумом и максимумом (по умолчанию 40–80%).",
       helpSectionBraschTitle: "Всплеск «Генерал Браш»",
       helpSectionBraschBody:
-        "Каждые N успешных стратегем (по умолчанию 50) запускают короткий режим: крупнее интерфейс, опционально гимн и портрет, таймер раунда на паузе. Если во время вспышки раунд должен закончиться, стратегемы продолжают добавляться до конца таймера режима. Параметры — в настройках.",
+        "Каждые N успешных стратегем (по умолчанию 50) запускают короткий режим: крупнее интерфейс, опционально гимн и портрет, таймер раунда на паузе. Если во время вспышки раунд должен закончиться, стратегемы продолжают добавляться до конца таймера режима. Параметры — в настройках. Отладочный хоткей: iddqd.",
       helpSectionKioskTitle: "Киоск / фестивальные режимы",
       helpSectionKioskBody:
         "Режим киоска (?kiosk=1): Простой (без жёстких штрафов), Спринт (30 с на очки), Лотерея (до первой ошибки), Марафон (сессия 5 мин). В части режимов между кодами может убывать «давление» по таймеру. Автоперезапуск после финального экрана — в настройках.",
