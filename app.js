@@ -3208,7 +3208,7 @@
       applyGlobalBackgrounds();
     });
     el("btnHome")?.addEventListener("click", () => {
-      if (isKioskMode()) setKioskQueryParam(false);
+      if (!isKioskMode()) setKioskQueryParam(true);
       showPanel("play");
       hideGameOverModal();
       applyGlobalBackgrounds();
