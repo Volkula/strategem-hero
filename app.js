@@ -3167,6 +3167,12 @@
       showPanel("play");
       applyGlobalBackgrounds();
     });
+    el("btnHome")?.addEventListener("click", () => {
+      if (isKioskMode()) setKioskQueryParam(false);
+      showPanel("play");
+      hideGameOverModal();
+      applyGlobalBackgrounds();
+    });
     el("btnSettings").addEventListener("click", () => {
       showPanel("settings");
       syncSettingsForm();
