@@ -1331,8 +1331,6 @@
   function getSolvedStratagemCount() {
     if (
       typeof ClassicStratagemHero !== "undefined" &&
-      ClassicStratagemHero.isActive &&
-      ClassicStratagemHero.isActive() &&
       ClassicStratagemHero.getCompletedStratagemCount
     ) {
       return Math.max(0, Math.floor(Number(ClassicStratagemHero.getCompletedStratagemCount()) || 0));
@@ -2348,6 +2346,7 @@
     if (tickHandle) clearInterval(tickHandle);
     tickHandle = null;
     let defeatScore = 0;
+    const solvedBeforeStop = getSolvedStratagemCount();
     if (typeof ClassicStratagemHero !== "undefined" && ClassicStratagemHero.isActive()) {
       defeatScore = ClassicStratagemHero.getScore();
       ClassicStratagemHero.stop();
@@ -2364,7 +2363,7 @@
     updateTimerHud();
     updateSessionHud();
     updateErrorsHud();
-    showFinalScreenModal("defeat", defeatScore, getSolvedStratagemCount(), {
+    showFinalScreenModal("defeat", defeatScore, solvedBeforeStop, {
       title: t("gameOverTitle"),
       message: t("defeatMaxErrors"),
     });
