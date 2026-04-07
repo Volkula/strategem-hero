@@ -200,7 +200,7 @@
     braschWarnUntil = 0;
     if (els.braschWarnBanner) {
       els.braschWarnBanner.hidden = true;
-      els.braschWarnBanner.classList.remove("illuminate-invasion-banner--blink");
+      els.braschWarnBanner.classList.remove("brasch-warning-banner--blink");
     }
     endBraschMode(false, true);
   }
@@ -292,12 +292,12 @@
     if (!node) return;
     if (!active || screen !== "in_game" || !braschWarnUntil || Date.now() >= braschWarnUntil) {
       node.hidden = true;
-      node.classList.remove("illuminate-invasion-banner--blink");
+      node.classList.remove("brasch-warning-banner--blink");
       return;
     }
     const sec = Math.max(1, Math.ceil((braschWarnUntil - Date.now()) / 1000));
     node.hidden = false;
-    node.classList.add("illuminate-invasion-banner--blink");
+    node.classList.add("brasch-warning-banner--blink");
     node.textContent =
       typeof tFn === "function" ? tFn("braschWarningBannerText").replace("{seconds}", String(sec)) : `BRASCH IN ${sec}s`;
   }
