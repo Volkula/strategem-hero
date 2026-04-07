@@ -602,7 +602,7 @@ html.automaton-takeover body * {
 
 .brasch-warning-banner {
   text-align: center;
-  font-family: "Segoe UI", system-ui, sans-serif;
+  font-family: "Segoe UI", system-ui, sans-serif !important;
   font-size: clamp(0.72rem, 2.8vw, 0.88rem);
   font-weight: 800;
   letter-spacing: 0.14em;

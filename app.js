@@ -835,6 +835,10 @@
     );
   }
 
+  function isAutomatonInvasionScheduled() {
+    return !!(run && run.active && run.automatonUntil && Date.now() < run.automatonUntil);
+  }
+
   function isTerminidTakeoverActive() {
     return !!(
       run &&
@@ -880,7 +884,7 @@
   }
 
   function syncAutomatonTakeoverUi() {
-    const on = isAutomatonTakeoverActive();
+    const on = isAutomatonInvasionScheduled();
     document.documentElement.classList.toggle("automaton-takeover", on);
     const cw = el("cyberstanWatermark");
     if (cw) cw.hidden = !on;
@@ -965,7 +969,7 @@
   }
 
   function syncIlluminatiTakeoverUi() {
-    const on = isIlluminatiInvasionEffectActive();
+    const on = isIlluminatiInvasionScheduled();
     document.documentElement.classList.toggle("illuminati-takeover", on);
     const iw = el("illuminateWatermark");
     if (iw) iw.hidden = !on;
