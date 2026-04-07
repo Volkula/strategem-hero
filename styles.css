@@ -1307,6 +1307,15 @@ html.terminid-takeover .hud-skulls-row {
   margin-right: auto;
 }
 
+.footer__github {
+  margin: 0 0 0.75rem;
+  font-size: 0.92rem;
+}
+
+.footer__github a {
+  color: var(--brand);
+}
+
 .btn-help-rules {
   display: inline-flex;
   align-items: center;
