@@ -644,16 +644,12 @@ html.automaton-takeover .hud-timer {
   width: 1.4rem;
   height: 1.4rem;
   transform: translateY(-50%);
-  display: grid;
-  place-items: center;
-  font-size: 1.15rem;
-  line-height: 1;
+  background-image: url("assets/images/terminid-bug.svg");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
   filter: drop-shadow(0 0 3px rgba(18, 35, 13, 0.75));
   transition: transform 0.16s ease, filter 0.16s ease;
-}
-
-.terminid-invasion-progress__bug::before {
-  content: "🐛";
 }
 
 .terminid-invasion-progress:hover .terminid-invasion-progress__bug {
@@ -818,7 +814,7 @@ html.terminid-takeover #panelPlay {
   background-repeat: no-repeat;
   background-size: cover;
   background-position: 50% 50%;
-  mix-blend-mode: soft-light;
+  mix-blend-mode: normal;
   animation: terminid-fog-pulse var(--terminid-fog-pulse-ms, 4500ms) ease-in-out infinite;
 }
 

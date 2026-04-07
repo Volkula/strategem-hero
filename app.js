@@ -892,7 +892,7 @@
   }
 
   function syncTerminidTakeoverUi() {
-    const on = isTerminidTakeoverActive();
+    const on = isTerminidInvasionScheduled();
     document.documentElement.classList.toggle("terminid-takeover", on);
     const layer = el("terminidFogLayer");
     const tDef = defaultConfig().classicTerminidInvasion;
@@ -913,6 +913,7 @@
     }
     if (layer) {
       layer.hidden = !on;
+      layer.style.display = on ? "block" : "none";
       const url = String(inv.fogImageUrl || "").trim();
       if (url) {
         const safe = url.replace(/\\/g, "/").replace(/'/g, "%27");
