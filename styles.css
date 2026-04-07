@@ -641,14 +641,28 @@ html.automaton-takeover .hud-timer {
   position: absolute;
   right: -0.5rem;
   top: 50%;
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 1.4rem;
+  height: 1.4rem;
   transform: translateY(-50%);
-  background-image: url("https://i.namu.wiki/i/lgB_O2rdQAhjx4i1kBB1V01IZtt14SL7MekZOrM9RE3jm5gMDQNfjwDFfv90NMzue3CJJ4b_n4fuoUwTiRFiPA.webp");
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
+  display: grid;
+  place-items: center;
+  font-size: 1.15rem;
+  line-height: 1;
   filter: drop-shadow(0 0 3px rgba(18, 35, 13, 0.75));
+  transition: transform 0.16s ease, filter 0.16s ease;
+}
+
+.terminid-invasion-progress__bug::before {
+  content: "🐛";
+}
+
+.terminid-invasion-progress:hover .terminid-invasion-progress__bug {
+  transform: translateY(-50%) scale(1.15);
+  filter: drop-shadow(0 0 6px rgba(110, 200, 85, 0.85));
+}
+
+.terminid-invasion-progress:hover .terminid-invasion-progress__fill {
+  box-shadow: 0 0 10px rgba(150, 220, 120, 0.45);
 }
 
 .terminid-invasion-timer {
