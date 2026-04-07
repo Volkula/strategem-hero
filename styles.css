@@ -637,6 +637,20 @@ html.automaton-takeover body * {
   }
 }
 
+/* Keep all current General Brasch UI text in neutral font. */
+html.automaton-takeover #classicBraschWarnBanner,
+html.automaton-takeover #classicComboWrap,
+html.automaton-takeover #classicComboWrap *,
+html.automaton-takeover #classicBraschPortraitWrap,
+html.automaton-takeover #classicBraschPortraitWrap *,
+html.illuminati-takeover #classicBraschWarnBanner,
+html.illuminati-takeover #classicComboWrap,
+html.illuminati-takeover #classicComboWrap *,
+html.illuminati-takeover #classicBraschPortraitWrap,
+html.illuminati-takeover #classicBraschPortraitWrap * {
+  font-family: "Segoe UI", system-ui, sans-serif !important;
+}
+
 .terminid-invasion-hud {
   margin: 0.35rem 0 0.5rem;
   min-height: 2.5rem;
